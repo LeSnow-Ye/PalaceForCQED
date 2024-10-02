@@ -13,6 +13,10 @@ struct Rectangle
     Rectangle(x_min=0.0, x_max=0.0, y_min=0.0, y_max=0.0) = new(x_min, x_max, y_min, y_max)
 end
 
+function included_in_rectangle(obj::Rectangle, rect::Rectangle)
+    return (obj.x_min >= rect.x_min && obj.x_max <= rect.x_max && obj.y_min >= rect.y_min && obj.y_max <= rect.y_max)
+end
+
 @enum ExcitationType begin
     LumpedPort
     WavePort
@@ -33,7 +37,7 @@ mutable struct GeneratorConfig
 
     # Cutting
     gaps_area::Rectangle = Rectangle()
-    area_expanded_from_gaps::Real
+    area_expanded_from_gaps::Real = 0.0
 
     # Ports
     excitation_type::ExcitationType
@@ -111,10 +115,11 @@ function generate_mesh(config::GeneratorConfig)
         gaps_raw_dimtags, _ = gmsh.model.occ.intersect(gaps_raw_dimtags, (2, gap_area))
     end
 
-    x_min -= area_expand
-    y_min -= area_expand
-    x_max += area_expand
-    y_max += area_expand
+    x_min -= config.area_expanded_from_gaps
+    y_min -= config.area_expanded_from_gaps
+    x_max += config.area_expanded_from_gaps
+    y_max += config.area_expanded_from_gaps
+    metal_rect = Rectangle(x_min, x_max, y_min, y_max)
 
     println("Meshing area: ($x_min, $y_min) -> ($x_max, $y_max)")
 
@@ -175,14 +180,18 @@ function generate_mesh(config::GeneratorConfig)
 
     # Junctions
     junctions_ids = []
-    for j in config.junctions
-        push!(junctions_ids, add_rectangle(j))
+    for j in config.jjs
+        if included_in_rectangle(j, metal_rect)
+            push!(junctions_ids, add_rectangle(j))
+        end
     end
 
     # Lumped ports
     lumped_ports_ids = []
     for l in config.lumped_ports
-        push!(lumped_ports_ids, add_rectangle(l))
+        if included_in_rectangle(l, metal_rect)
+            push!(lumped_ports_ids, add_rectangle(l))
+        end
     end
 
     # Ports
