@@ -1,0 +1,72 @@
+{
+  "Problem": {
+    "Type": "Electrostatic",
+    "Verbose": 2,
+    "Output": "2DQv9_eb4_data/detailed/lumped_adaptive_detailed_r1.5_o4_500nh_zoom1"
+  },
+  "Model": {
+    "Mesh": "mesh/2DQv9_eb4_edit_lumped_r1.5.msh",
+    "L0": 1.0e-6, // μm
+    "Refinement": {}
+  },
+  "Domains": {
+    "Materials": [
+      {
+        "Attributes": [
+          1001
+        ], // Air
+        "Permeability": 1.0,
+        "Permittivity": 1.0,
+        "LossTan": 0.0
+      },
+      {
+        "Attributes": [
+          1002
+        ], // Silicon
+        "LossTan": 2.1e-4,
+        "Permittivity": 11.49,
+        "Permeability": 1.0
+      }
+    ],
+    "Postprocessing": {}
+  },
+  "Boundaries": {
+    "Terminal":
+    [
+      {
+        "Index": 1,
+        "Attributes": [1006]
+      },
+      {
+        "Index": 2,
+        "Attributes": [1007]
+      },
+      {
+        "Index": 3,
+        "Attributes": [1005]
+      }
+    ],
+    "Ground": {
+      "Attributes": [
+        1004
+      ]
+    },
+    "Postprocessing": {}
+  },
+  "Solver":
+  {
+    "Order": 5,
+    "Device": "CPU",
+    "Electrostatic":
+    {
+      "Save": 3
+    },
+    "Linear":
+    {
+      "Type": "BoomerAMG",
+      "KSPType": "CG",
+      "Tol": 1.0e-8,
+      "MaxIts": 100
+    }
+  }
+}

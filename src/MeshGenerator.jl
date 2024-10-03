@@ -1,8 +1,11 @@
 module MeshGenerator
 
+include("GmshUtils.jl")
+using .GmshUtils
+
 using Gmsh: gmsh
 
-export GeneratorConfig, Rectangle, ExcitationType, generate_mesh
+export GeneratorConfig, Rectangle, ExcitationType, generate_mesh, electrostatic_config
 
 struct Rectangle
     x_min::Float64
@@ -24,11 +27,11 @@ end
     NoExcitation
 end
 
-mutable struct GeneratorConfig
+@kwdef mutable struct GeneratorConfig
     # General
     geo_file_path::AbstractString
     output_dir::AbstractString
-    mesh_name::AbstractString
+    mesh_name::AbstractString = "mesh"
     refinement_level::Real = 1.5
     mesh_order::Integer = 1
     gui::Bool = false
@@ -41,19 +44,37 @@ mutable struct GeneratorConfig
 
     # Ports
     excitation_type::ExcitationType
-    lumped_ports::Vector{Rectangle}
-    jjs::Vector{Rectangle} # They are also lumped ports. Renaming for convenience of readability.
+    lumped_ports::Vector{Rectangle} = []
+    jjs::Vector{Rectangle} = [] # They are also lumped ports. Renaming for convenience of readability.
 
     # Geometry 
     air_domain_height_μm::Real = 1500.0 # Above metal layer
     trace_width_μm::Real = 20.0
     substrate_height_μm::Real = 525.0
     metal_height_μm::Real = 0.0
-    remove_metal_vol::Bool = true
+    remove_metal_vol::Bool = false
 
     # Others
     split_metal_physical_group::Bool = false
 
+end
+
+function electrostatic_config(
+    geo_file_path::AbstractString,
+    output_dir::AbstractString,
+    gaps_area::Rectangle,
+    area_expanded_from_gaps::Real;
+    kwargs...
+)
+    return GeneratorConfig(
+        geo_file_path=geo_file_path,
+        output_dir=output_dir,
+        gaps_area=gaps_area,
+        area_expanded_from_gaps=area_expanded_from_gaps,
+        excitation_type=NoExcitation,
+        split_metal_physical_group=true;
+        kwargs...
+    )
 end
 
 function check_config(config::GeneratorConfig)
@@ -69,8 +90,15 @@ function gmsh_add_rectangle(rect::Rectangle)
     return gmsh.model.occ.add_rectangle(rect.x_min, rect.y_min, 0.0, rect.x_max - rect.x_min, rect.y_max - rect.y_min)
 end
 
+function preprocess_geo_file!(config::GeneratorConfig)
+    new_geo_file_path = joinpath(config.output_dir, "uniformized.geo")
+    uniformize(config.geo_file_path, new_geo_file_path; min_length=2 * 20.0 * (2.0^-config.refinement_level))
+    config.geo_file_path = new_geo_file_path
+end
+
 function generate_mesh(config::GeneratorConfig)
     check_config(config)
+    preprocess_geo_file!(config)
 
     # Load .geo
     gmsh.initialize()
@@ -152,7 +180,7 @@ function generate_mesh(config::GeneratorConfig)
     substrate = gmsh.model.occ.addBox(x_min, y_min, -config.substrate_height_μm, dx, dy, config.substrate_height_μm)
 
     # Exterior box
-    add_wave_port = config.excitation_type == wavePort || config.excitation_type == coaxWavePort
+    add_wave_port = config.excitation_type == WavePort || config.excitation_type == CoaxWavePort
     if add_wave_port
         # TODO: now still need to add the port manually
         domain = gmsh.model.occ.addBox(
@@ -182,7 +210,7 @@ function generate_mesh(config::GeneratorConfig)
     junctions_ids = []
     for j in config.jjs
         if included_in_rectangle(j, metal_rect)
-            push!(junctions_ids, add_rectangle(j))
+            push!(junctions_ids, gmsh_add_rectangle(j))
         end
     end
 
@@ -190,7 +218,7 @@ function generate_mesh(config::GeneratorConfig)
     lumped_ports_ids = []
     for l in config.lumped_ports
         if included_in_rectangle(l, metal_rect)
-            push!(lumped_ports_ids, add_rectangle(l))
+            push!(lumped_ports_ids, gmsh_add_rectangle(l))
         end
     end
 
@@ -427,12 +455,12 @@ function generate_mesh(config::GeneratorConfig)
     # Save mesh
     gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
     gmsh.option.setNumber("Mesh.Binary", 0)
-    
+
     full_path = ""
     if config.output_dir == ""
-        full_path = joinpath(dirname(@__DIR__), "res/mesh", config.mesh_name)
+        full_path = joinpath(dirname(@__DIR__), "tmp", "$(config.mesh_name).msh")
     else
-        full_path = joinpath(config.output_dir, config.mesh_name)
+        full_path = joinpath(config.output_dir, "$(config.mesh_name).msh")
     end
 
     gmsh.write(full_path)

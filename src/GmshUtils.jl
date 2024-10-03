@@ -228,12 +228,12 @@ Uniformize the geo file by removing lines with small angle difference and small 
 - `min_length::Float64=5.0`: the minimum length of the line.
 
 """
-function uniformize(;
+function uniformize(
     geo_file_path::String,
-    output_path::String,
+    output_path::String;
     section_length_threshold::Int=40,
     threshold_angle::Float64=18 * pi / 180,
-    min_length::Float64=5.0)
+    min_length::Float64=2 * 20.0 * (2.0^-1.5))
 
     if !isdir(dirname(output_path))
         mkpath(dirname(output_path))
