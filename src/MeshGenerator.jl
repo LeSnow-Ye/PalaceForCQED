@@ -5,7 +5,7 @@ using .GmshUtils
 
 using Gmsh: gmsh
 
-export GeneratorConfig, Rectangle, ExcitationType, generate_mesh, electrostatic_config
+export GeneratorConfig, Rectangle, ExcitationType, generate_mesh, basic_config, to_electrostatic!
 
 struct Rectangle
     x_min::Float64
@@ -59,7 +59,7 @@ end
 
 end
 
-function electrostatic_config(
+function basic_config(
     geo_file_path::AbstractString,
     output_dir::AbstractString,
     gaps_area::Rectangle,
@@ -71,10 +71,13 @@ function electrostatic_config(
         output_dir=output_dir,
         gaps_area=gaps_area,
         area_expanded_from_gaps=area_expanded_from_gaps,
-        excitation_type=NoExcitation,
-        split_metal_physical_group=true;
+        excitation_type=NoExcitation;
         kwargs...
     )
+end
+
+function to_electrostatic!(config::GeneratorConfig)
+    config.split_metal_physical_group = true
 end
 
 function check_config(config::GeneratorConfig)

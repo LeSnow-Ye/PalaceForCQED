@@ -11,7 +11,8 @@ function electrostatic_RQ()
     ensure_path(output_path)
 
     # Generate mesh.
-    mesh_config = electrostatic_config(GEO_PATH, output_path, RQ_RECT, 300.0; jjs=[Rectangle(860, 925, -70, -60)])
+    mesh_config = basic_config(GEO_PATH, output_path, RQ_RECT, 300.0)
+    to_electrostatic!(mesh_config)
     mesh_path = generate_mesh(mesh_config)
 
     # Update parameters.
@@ -21,7 +22,5 @@ function electrostatic_RQ()
     save_config(params, joinpath(output_path, "palace-config.json"))
 
     # Run Palace.
-    # palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
+    palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
 end
-
-electrostatic_RQ()
