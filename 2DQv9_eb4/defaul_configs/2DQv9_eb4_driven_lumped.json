@@ -1,0 +1,95 @@
+{
+  "Problem": {
+    "Type": "Driven",
+    "Verbose": 2,
+    "Output": "2DQv9_eb4_data/detailed/lumped_adaptive_detailed_r1.5_o4_500nh_zoom1"
+  },
+  "Model": {
+    "Mesh": "mesh/2DQv9_eb4_edit_lumped_r1.5.msh",
+    "L0": 1.0e-6, // μm
+    "Refinement": {}
+  },
+  "Domains": {
+    "Materials": [
+      {
+        "Attributes": [
+          1001
+        ], // Air
+        "Permeability": 1.0,
+        "Permittivity": 1.0,
+        "LossTan": 0.0
+      },
+      {
+        "Attributes": [
+          1002
+        ], // Silicon
+        "LossTan": 2.1e-4,
+        "Permittivity": 11.49,
+        "Permeability": 1.0
+      }
+    ],
+    "Postprocessing": {}
+  },
+  "Boundaries": {
+    "PEC": {
+      "Attributes": [
+        1005
+      ]
+    },
+    "Absorbing": {
+      "Attributes": [
+        1004
+      ],
+      "Order": 1
+    },
+    "LumpedPort": [
+      {
+        "Index": 1,
+        "R": 50.0, // Ω, 2-element uniform
+        "Excitation": true,
+        "Elements": [
+          {
+            "Attributes": [
+              3001
+            ],
+            "Direction": "+Y"
+          }
+        ]
+      },
+      {
+        "Index": 2,
+        "Attributes": [
+          2001
+        ],
+        "Direction": "+X",
+        "L": 15.65e-9
+      },
+      {
+        "Index": 3,
+        "Attributes": [
+          2002
+        ],
+        "Direction": "-X",
+        "L": 17.42e-9
+      }
+    ],
+    "Postprocessing": {}
+  },
+  "Solver": {
+    "Order": 4,
+    "Device": "CPU",
+    "Driven": {
+      "MinFreq": 7.113, // GHz
+      "MaxFreq": 7.125, // GHz
+      "FreqStep": 0.00001, // GHz
+      "AdaptiveTol": 1.0e-3,
+      "SaveStep": 0
+    },
+    "Linear": {
+      "Type": "Default",
+      "KSPType": "GMRES",
+      "Tol": 1.0e-8,
+      "MaxIts": 300
+    }
+  }
+}

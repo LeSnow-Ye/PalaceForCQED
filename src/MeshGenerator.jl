@@ -39,7 +39,7 @@ end
     verbose::Integer = 5
 
     # Cutting
-    gaps_area::Rectangle = Rectangle()
+    gaps_area::Rectangle = Rectangle() # Set to Rectangle() to automatically detect gaps.
     area_expanded_from_gaps::Real = 0.0
 
     # Ports
@@ -74,10 +74,6 @@ function basic_config(
         excitation_type=NoExcitation;
         kwargs...
     )
-end
-
-function to_electrostatic!(config::GeneratorConfig)
-    config.split_metal_physical_group = true
 end
 
 function check_config(config::GeneratorConfig)
