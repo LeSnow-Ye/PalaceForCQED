@@ -1,16 +1,9 @@
 include("../src/load_modules.jl")
 
-# Constants
-const CONFIG_DIR = joinpath(@__DIR__, "defaul_configs")
-const OUTPUT_DIR = "/data/lesnow/2DQv9_eb4_data"
-const GEO_PATH = joinpath(@__DIR__, "geo_files/2DQv9_eb4_edit.geo")
-const RQ_RECT = Rectangle(40, 1160, -705, 105)
-const QUBIT_RECT = Rectangle(625, 1160, -705, 105)
-const WAVE_RECT = Rectangle(-2400, 2400, -2293.5, 2400)
-const JUNCTIONS = Rectangle[Rectangle(-955, -890, 650, 660), Rectangle(860, 925, -280, -285)]
-const EXCITAION_LUMPED_PORT = Rectangle(-10, 10, -2350, -2293.5)
+include("def_2DQv8_eb4.jl")
+# include("def_2DQv9_eb4.jl")
 
-function driven_lumped(MinFreq::Float64, MaxFreq::Float64, FreqStep::Float64=0.001, SaveStep::Integer=0)
+function driven_lumped(MinFreq::Float64, MaxFreq::Float64, FreqStep::Float64=0.001, SaveStep::Integer=0, lj1::Real=-1, lj2::Real=-1)
     output_path = joinpath(OUTPUT_DIR, "driven/lumped_$(MinFreq)-$(MaxFreq)_Step$(FreqStep)_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
     ensure_path(output_path)
 
@@ -29,6 +22,14 @@ function driven_lumped(MinFreq::Float64, MaxFreq::Float64, FreqStep::Float64=0.0
     params["Solver"]["Driven"]["MaxFreq"] = MaxFreq
     params["Solver"]["Driven"]["FreqStep"] = FreqStep
     params["Solver"]["Driven"]["SaveStep"] = SaveStep
+    if lj1 > 0 && params["Boundaries"]["LumpedPort"][2]["Attributes"][1] == 2001
+        params["Boundaries"]["LumpedPort"][2]["L"] = lj1 * 1e-9
+    end
+
+    if lj2 > 0 && params["Boundaries"]["LumpedPort"][3]["Attributes"][1] == 2002
+        params["Boundaries"]["LumpedPort"][3]["L"] = lj2 * 1e-9
+    end
+
     save_config(params, joinpath(output_path, "palace-config.json"))
 
     # Run Palace.
@@ -53,14 +54,26 @@ function electrostatic_RQ()
     palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
 end
 
-function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0)
+"""
+    eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0)
+
+Compute the eigenmodes of the qubit system with a given Josephson junction inductance.
+
+# Arguments
+- `jj_inductance::Real`: the Josephson junction inductance ``L_{j}`` (nH).
+- `num_eigens::Int=2`: the number of eigenvalues to compute.
+- `save_eigens::Int=2`: the number of eigenvalues to save.
+- `target_freq::Real=3.0`: the target frequency of the eigenmodes to compute.
+"""
+function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0, with_resonator::Bool=false)
     @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
 
-    output_path = joinpath(OUTPUT_DIR, "qubit/eigen_L$(jj_inductance)nH_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
+    output_path = joinpath(OUTPUT_DIR, with_resonator ? "RQ" : "qubit", "eigen_L$(jj_inductance)nH_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
+
     ensure_path(output_path)
 
     # Generate mesh.
-    mesh_config = basic_config(GEO_PATH, output_path, QUBIT_RECT, 300.0; jjs=[JUNCTIONS[2]])
+    mesh_config = basic_config(GEO_PATH, output_path, with_resonator ? RQ_RECT : QUBIT_RECT, 300.0; jjs=[JUNCTIONS[2]])
     mesh_path = generate_mesh(mesh_config)
 
     # Update parameters.
@@ -77,6 +90,9 @@ function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2,
     palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
 end
 
-# eigen_qubit(15.65, 1, 1, 4.0)
-# eigen_qubit(17.42, 1, 1, 4.0)
-driven_lumped(4.0, 4.9, 0.002)
+# eigen_qubit(16.710, 1, 1, 3.0)
+eigen_qubit(21.70551, 2, 2, 5.0, true)
+# driven_lumped(3.5, 4.8, 0.0005)
+# driven_lumped(4.35, 4.45, 0.0001,0, 16.78543, 21.70551)
+# driven_lumped(3.83, 3.93, 0.0001,0, 16.78543, 21.70551)
+# driven_lumped(6.7, 7.7, 0.001, 0, 16.78543, 21.70551)

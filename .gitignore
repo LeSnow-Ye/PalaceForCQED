@@ -3,3 +3,4 @@ Manifest.toml
 .vscode/*
 
 data
+data_*
