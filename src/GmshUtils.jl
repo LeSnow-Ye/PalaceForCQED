@@ -1,3 +1,5 @@
+#! WARNING: Current version of GmshUtils.jl is not GENERALLY functional and POORLY impledented.
+
 module GmshUtils
 
 export uniformize
@@ -19,10 +21,10 @@ mutable struct LineLoop
     line_ids::Vector{Int}
 end
 
-function length_of_line(l::Line, points::Vector{Point})
-    p_start = points[findfirst(p -> p.id == l.point_ids[1], points)]
-    p_end = points[findfirst(p -> p.id == l.point_ids[2], points)]
-    return sqrt((p_end.x - p_start.x)^2 + (p_end.y - p_start.y)^2 + (p_end.z - p_start.z)^2)
+function length_between_points(p1::Point, p2::Point)
+    dx = p2.x - p1.x
+    dy = p2.y - p1.y
+    return sqrt(dx^2 + dy^2)
 end
 
 function geo_string(p::Point)
@@ -43,25 +45,36 @@ function vector(p1::Point, p2::Point)
     return (dx, dy)
 end
 
+function line_length(l::Line)
+    p1 = points[findfirst(p -> p.id == l.point_ids[1], points)]
+    p2 = points[findfirst(p -> p.id == l.point_ids[2], points)]
+    dx, dy = vector(p1, p2)
+    return sqrt(dx^2 + dy^2)
+end
+
 function angle(vector)
     atan(vector[2], vector[1])
 end
 
+function is_vertical_or_horizontal(line::Line, points::Vector{Point})
+    p1 = points[findfirst(p -> p.id == line.point_ids[1], points)]
+    p2 = points[findfirst(p -> p.id == line.point_ids[2], points)]
+    return (p1.x == p2.x) || (p1.y == p2.y)
+end
+
 function angle_difference(line1::Line, line2::Line, points::Vector{Point})
-    # 获取两条线的起点和终点
     p1_start = points[findfirst(p -> p.id == line1.point_ids[1], points)]
     p1_end = points[findfirst(p -> p.id == line1.point_ids[2], points)]
     p2_start = points[findfirst(p -> p.id == line2.point_ids[1], points)]
     p2_end = points[findfirst(p -> p.id == line2.point_ids[2], points)]
 
-    # 计算两条线的向量
     vector1 = vector(p1_start, p1_end)
     vector2 = vector(p2_start, p2_end)
     angle_diff = angle(vector1) - angle(vector2)
     angle_diff = mod(angle_diff + pi, 2 * pi) - pi
 
     # println("angle1 = $(rad2deg(angle1)), angle2 = $(rad2deg(angle2)), angle_diff = $(rad2deg(angle_diff))")
-    return abs(angle_diff) # 返回角度差的绝对值
+    return abs(angle_diff)
 end
 
 function distance_between_lines(line1::Line, line2::Line, points::Vector{Point})
@@ -123,71 +136,86 @@ function parse_line_loop(str::String)
     return LineLoop(line_loop_id, line_ids)
 end
 
-function remove_lines_until_threshold!(line_loop::LineLoop, lines::Vector{Line}, points::Vector{Point}, threshold_angle::Float64, min_length::Float64)
-    need_to_iterate = true
-    i = 1
-    new_line_ids = Int[]
-    push!(new_line_ids, line_loop.line_ids[i])
+function uniformized_line_points(buffer_line_points::Vector{Point}, target_segment_length::Float64)
+    total_length::Float64 = 0.0
+    for i in 1:length(buffer_line_points)-1
+        total_length += length_between_points(buffer_line_points[i], buffer_line_points[i+1])
+    end
 
-    while need_to_iterate
-        line1 = lines[findfirst(l -> l.id == line_loop.line_ids[i], lines)]
-        for j in i+1:length(line_loop.line_ids)
-            line2 = lines[findfirst(l -> l.id == line_loop.line_ids[j], lines)]
+    l = total_length / ceil(total_length / target_segment_length)
 
-            if (angle_difference(line1, line2, points) < threshold_angle) && (distance_between_lines(line1, line2, points) < min_length)
-                if j == length(line_loop.line_ids)
-                    push!(new_line_ids, line_loop.line_ids[j])
-                    need_to_iterate = false
-                end
-                continue
+    new_line_points::Vector{Point} = []
+    push!(new_line_points, buffer_line_points[1])
+
+    buf = l
+    for i in 2:length(buffer_line_points)
+        p1 = buffer_line_points[i-1]
+        p2 = buffer_line_points[i]
+        segment_length = length_between_points(p1, p2)
+
+        while buf < segment_length && !(i == length(buffer_line_points) && ((segment_length - buf) < 0.2 * l))
+            x = p1.x + (p2.x - p1.x) * buf / segment_length
+            y = p1.y + (p2.y - p1.y) * buf / segment_length
+            z = p1.z + (p2.z - p1.z) * buf / segment_length
+            push!(new_line_points, Point(new_line_points[end].id + 1, x, y, z))
+            buf += l
+        end
+
+        buf -= segment_length
+    end
+
+    return new_line_points
+end
+
+function uniformized_line_loop(line_loop::LineLoop, lines::Vector{Line}, points::Vector{Point}, min_length::Float64)
+    # Extract points forming the line loop and construct a new line loop with uniformized points.
+
+    new_line_loop_points::Vector{Point} = []
+    buffer_line_points::Vector{Point} = []
+    for line_id = line_loop.line_ids
+        line = lines[findfirst(l -> l.id == line_id, lines)]
+
+        @assert length(line.point_ids) == 2 # Only support lines with two points
+
+        if is_vertical_or_horizontal(line, points)
+            if length(buffer_line_points) > 0
+                new_line_loop_points = [new_line_loop_points; uniformized_line_points(buffer_line_points, min_length)]
+                buffer_line_points = []
             end
 
-            push!(new_line_ids, line_loop.line_ids[j])
-            i = j
-            if i == length(line_loop.line_ids)
-                need_to_iterate = false
-            end
-            break
+            push!(new_line_loop_points, points[findfirst(p -> p.id == line.point_ids[1], points)])
+        else
+            push!(buffer_line_points, points[findfirst(p -> p.id == line.point_ids[1], points)])
         end
     end
 
-    line_loop.line_ids = new_line_ids
-    # println(line_loop.line_ids)
-end
-
-function enclose_line_loop!(line_loop::LineLoop, lines::Vector{Line})
-    for i in 1:length(line_loop.line_ids)
-        line1 = lines[findfirst(l -> l.id == line_loop.line_ids[i], lines)]
-        j = i == length(line_loop.line_ids) ? 1 : i + 1
-        line2 = lines[findfirst(l -> l.id == line_loop.line_ids[j], lines)]
-        line1.point_ids = [line1.point_ids[1], line2.point_ids[1]]
-    end
-end
-
-function get_unique_points_from_line_loop(line_loop::LineLoop, lines::Vector{Line}, points::Vector{Point})
-    point_id_set = Set{Int}()
-    for line_id in line_loop.line_ids
-        line = lines[findfirst(l -> l.id == line_id, lines)]
-        push!(point_id_set, line.point_ids[1])
-        push!(point_id_set, line.point_ids[2])
+    if length(buffer_line_points) > 0
+        new_line_loop_points = [new_line_loop_points; uniformized_line_points(buffer_line_points, min_length)]
     end
 
-    loop_points::Vector{Point} = []
-    for point_id in point_id_set
-        push!(loop_points, points[findfirst(p -> p.id == point_id, points)])
+    last_point_id = lines[findfirst(l -> l.id == line_loop.line_ids[end], lines)].point_ids[2]
+    new_line_loop_points = [new_line_loop_points; points[findfirst(p -> p.id == last_point_id, points)]]
+    @assert length(new_line_loop_points) - 1 <= length(line_loop.line_ids)
+
+    new_lines::Vector{Line} = []
+    for i in 1:length(new_line_loop_points)-1
+        line = Line(line_loop.line_ids[i], [new_line_loop_points[i].id, new_line_loop_points[i+1].id])
+        push!(new_lines, line)
     end
 
-    return loop_points
+    new_line_loop = LineLoop(line_loop.id, [line.id for line in new_lines])
+
+    return new_line_loop, new_lines, new_line_loop_points[1:end-1]
 end
 
-function uniformize_surface(str::String, threshold_angle::Float64, min_length::Float64)
+function uniformized_surface_str(raw_surface_str::String, min_length::Float64)
     points::Vector{Point} = []
     lines::Vector{Line} = []
     line_loops::Vector{LineLoop} = []
 
     buffer::String = ""
 
-    for line in eachline(IOBuffer(str))
+    for line in eachline(IOBuffer(raw_surface_str))
         if startswith(line, "Point")
             push!(points, parse_point(line))
         elseif startswith(line, "Line Loop")
@@ -202,18 +230,17 @@ function uniformize_surface(str::String, threshold_angle::Float64, min_length::F
 
     @assert length(line_loops) == 1
 
-    remove_lines_until_threshold!(line_loops[1], lines, points, threshold_angle, min_length)
-    enclose_line_loop!(line_loops[1], lines)
+    new_line_loop, new_lines, new_line_loop_points = uniformized_line_loop(line_loops[1], lines, points, min_length)
 
-    for point in get_unique_points_from_line_loop(line_loops[1], lines, points)
+    for point in new_line_loop_points
         buffer *= geo_string(point)
     end
 
-    for line_id in line_loops[1].line_ids
-        buffer *= geo_string(lines[findfirst(l -> l.id == line_id, lines)])
+    for line in new_lines
+        buffer *= geo_string(line)
     end
 
-    buffer *= geo_string(line_loops[1])
+    buffer *= geo_string(new_line_loop)
     return buffer
 end
 
@@ -231,8 +258,6 @@ Uniformize the geo file by removing lines with small angle difference and small 
 function uniformize(
     geo_file_path::String,
     output_path::String;
-    section_length_threshold::Int=40,
-    threshold_angle::Float64=18 * pi / 180,
     min_length::Float64=2 * 20.0 * (2.0^-1.5))
 
     if !isdir(dirname(output_path))
@@ -245,11 +270,7 @@ function uniformize(
             section_length = 0
             for line in eachline(input)
                 if startswith(line, "Plane Surface")
-                    if section_length >= section_length_threshold
-                        write(output, uniformize_surface(buffer, threshold_angle, min_length))
-                    else
-                        write(output, buffer)
-                    end
+                    write(output, uniformized_surface_str(buffer, min_length))
                     buffer = ""
                     section_length = 0
                 end

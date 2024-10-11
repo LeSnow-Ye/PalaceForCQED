@@ -69,7 +69,6 @@ function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2,
     @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
 
     output_path = joinpath(OUTPUT_DIR, with_resonator ? "RQ" : "qubit", "eigen_L$(jj_inductance)nH_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
-
     ensure_path(output_path)
 
     # Generate mesh.
@@ -90,9 +89,10 @@ function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2,
     palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
 end
 
-# eigen_qubit(16.710, 1, 1, 3.0)
-eigen_qubit(21.70551, 2, 2, 5.0, true)
+# eigen_qubit(16.710, 3, 3, 3.0)
+# eigen_qubit(21.70551, 3, 3, 3.0, true)
+
 # driven_lumped(3.5, 4.8, 0.0005)
-# driven_lumped(4.35, 4.45, 0.0001,0, 16.78543, 21.70551)
-# driven_lumped(3.83, 3.93, 0.0001,0, 16.78543, 21.70551)
-# driven_lumped(6.7, 7.7, 0.001, 0, 16.78543, 21.70551)
+driven_lumped(6.9, 7.8, 0.001, 0, 16.78543, 21.70551)
+driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
+driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
