@@ -136,65 +136,6 @@ function parse_line_loop(str::String)
     return LineLoop(line_loop_id, line_ids)
 end
 
-function remove_lines_until_threshold!(line_loop::LineLoop, lines::Vector{Line}, points::Vector{Point}, threshold_angle::Float64, min_length::Float64)
-    need_to_iterate = true
-    i = 1
-    new_line_ids = Int[]
-    push!(new_line_ids, line_loop.line_ids[i])
-
-    while need_to_iterate
-        line1 = lines[findfirst(l -> l.id == line_loop.line_ids[i], lines)]
-        for j in i+1:length(line_loop.line_ids)
-            line2 = lines[findfirst(l -> l.id == line_loop.line_ids[j], lines)]
-
-            if !is_vertical_or_horizontal(line2, points) && (angle_difference(line1, line2, points) < threshold_angle && distance_between_lines(line1, line2, points) < min_length)
-                if j == length(line_loop.line_ids) # Last line in the loop
-                    push!(new_line_ids, line_loop.line_ids[j])
-                    need_to_iterate = false
-                end
-                continue # Skip this line
-            end
-
-            push!(new_line_ids, line_loop.line_ids[j])
-            i = j
-            if i == length(line_loop.line_ids)
-                need_to_iterate = false
-            end
-            break
-        end
-    end
-
-    line_loop.line_ids = new_line_ids
-    # println(line_loop.line_ids)
-end
-
-function enclose_line_loop!(line_loop::LineLoop, lines::Vector{Line})
-    for i in 1:length(line_loop.line_ids)
-        line1 = lines[findfirst(l -> l.id == line_loop.line_ids[i], lines)]
-        j = i == length(line_loop.line_ids) ? 1 : i + 1
-        line2 = lines[findfirst(l -> l.id == line_loop.line_ids[j], lines)]
-        line1.point_ids = [line1.point_ids[1], line2.point_ids[1]]
-    end
-end
-
-function get_unique_points_from_line_loop(line_loop::LineLoop, lines::Vector{Line}, points::Vector{Point})
-    point_id_set = Set{Int}()
-    for line_id in line_loop.line_ids
-        line = lines[findfirst(l -> l.id == line_id, lines)]
-        for point_id in line.point_ids
-            push!(point_id_set, point_id)
-        end
-    end
-
-    loop_points::Vector{Point} = []
-    for point_id in point_id_set
-        push!(loop_points, points[findfirst(p -> p.id == point_id, points)])
-    end
-
-
-    return loop_points
-end
-
 function uniformized_line_points(buffer_line_points::Vector{Point}, target_segment_length::Float64)
     total_length::Float64 = 0.0
     for i in 1:length(buffer_line_points)-1
@@ -227,6 +168,8 @@ function uniformized_line_points(buffer_line_points::Vector{Point}, target_segme
 end
 
 function uniformized_line_loop(line_loop::LineLoop, lines::Vector{Line}, points::Vector{Point}, min_length::Float64)
+    # Extract points forming the line loop and construct a new line loop with uniformized points.
+
     new_line_loop_points::Vector{Point} = []
     buffer_line_points::Vector{Point} = []
     for line_id = line_loop.line_ids
@@ -265,7 +208,7 @@ function uniformized_line_loop(line_loop::LineLoop, lines::Vector{Line}, points:
     return new_line_loop, new_lines, new_line_loop_points[1:end-1]
 end
 
-function uniformized_surface(raw_surface_str::String, min_length::Float64)
+function uniformized_surface_str(raw_surface_str::String, min_length::Float64)
     points::Vector{Point} = []
     lines::Vector{Line} = []
     line_loops::Vector{LineLoop} = []
@@ -327,7 +270,7 @@ function uniformize(
             section_length = 0
             for line in eachline(input)
                 if startswith(line, "Plane Surface")
-                    write(output, uniformized_surface(buffer, min_length))
+                    write(output, uniformized_surface_str(buffer, min_length))
                     buffer = ""
                     section_length = 0
                 end
