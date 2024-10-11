@@ -91,7 +91,7 @@ end
 
 function preprocess_geo_file!(config::GeneratorConfig)
     new_geo_file_path = joinpath(config.output_dir, "uniformized.geo")
-    uniformize(config.geo_file_path, new_geo_file_path; min_length=2 * 20.0 * (2.0^-config.refinement_level))
+    uniformize(config.geo_file_path, new_geo_file_path; min_length=config.trace_width_μm * (2.0^-config.refinement_level))
     config.geo_file_path = new_geo_file_path
 end
 

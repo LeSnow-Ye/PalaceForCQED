@@ -211,7 +211,8 @@ function uniformized_line_points(buffer_line_points::Vector{Point}, target_segme
         p1 = buffer_line_points[i-1]
         p2 = buffer_line_points[i]
         segment_length = length_between_points(p1, p2)
-        while buf < segment_length
+
+        while buf < segment_length && !(i == length(buffer_line_points) && ((segment_length - buf) < 0.2 * l))
             x = p1.x + (p2.x - p1.x) * buf / segment_length
             y = p1.y + (p2.y - p1.y) * buf / segment_length
             z = p1.z + (p2.z - p1.z) * buf / segment_length
@@ -251,11 +252,17 @@ function uniformized_line_loop(line_loop::LineLoop, lines::Vector{Line}, points:
 
     last_point_id = lines[findfirst(l -> l.id == line_loop.line_ids[end], lines)].point_ids[2]
     new_line_loop_points = [new_line_loop_points; points[findfirst(p -> p.id == last_point_id, points)]]
+    @assert length(new_line_loop_points) - 1 <= length(line_loop.line_ids)
 
-    new_line = Line(line_loop.line_ids[1], [p.id for p in new_line_loop_points])
-    new_line_loop = LineLoop(line_loop.id, [new_line.id])
+    new_lines::Vector{Line} = []
+    for i in 1:length(new_line_loop_points)-1
+        line = Line(line_loop.line_ids[i], [new_line_loop_points[i].id, new_line_loop_points[i+1].id])
+        push!(new_lines, line)
+    end
 
-    return new_line_loop, new_line, new_line_loop_points[1:end-1]
+    new_line_loop = LineLoop(line_loop.id, [line.id for line in new_lines])
+
+    return new_line_loop, new_lines, new_line_loop_points[1:end-1]
 end
 
 function uniformized_surface(raw_surface_str::String, min_length::Float64)
@@ -280,13 +287,16 @@ function uniformized_surface(raw_surface_str::String, min_length::Float64)
 
     @assert length(line_loops) == 1
 
-    new_line_loop, new_line, new_line_loop_points = uniformized_line_loop(line_loops[1], lines, points, min_length)
+    new_line_loop, new_lines, new_line_loop_points = uniformized_line_loop(line_loops[1], lines, points, min_length)
 
     for point in new_line_loop_points
         buffer *= geo_string(point)
     end
 
-    buffer *= geo_string(new_line)
+    for line in new_lines
+        buffer *= geo_string(line)
+    end
+
     buffer *= geo_string(new_line_loop)
     return buffer
 end
