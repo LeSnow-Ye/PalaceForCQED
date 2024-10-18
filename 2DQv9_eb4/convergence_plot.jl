@@ -95,3 +95,7 @@ end
 output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test")
 convergence_plot(output_path; save_filename="eig_qubit.svg", eig_index=1, ylim=(3.78, 3.9), fitting=true)
 convergence_plot(output_path; save_filename="eig_resonator.svg", eig_index=2, fitting=false)
+
+
+output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "resonator", "convergence_test")
+convergence_plot(output_path; save_filename="eig.svg", eig_index=1, fitting=false)
