@@ -142,6 +142,12 @@ function uniformized_line_points(buffer_line_points::Vector{Point}, target_segme
         total_length += length_between_points(buffer_line_points[i], buffer_line_points[i+1])
     end
 
+    # Unnecessary to refine the points here. It can be done by Gmsh later.
+    average_length = total_length / (length(buffer_line_points) - 1)
+    if target_segment_length <= average_length
+        return buffer_line_points
+    end
+
     l = total_length / ceil(total_length / target_segment_length)
 
     new_line_points::Vector{Point} = []

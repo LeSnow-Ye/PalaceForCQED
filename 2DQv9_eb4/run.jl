@@ -55,15 +55,19 @@ function electrostatic_RQ()
 end
 
 """
-    eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0)
+    eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0, with_resonator::Bool=false)
 
 Compute the eigenmodes of the qubit system with a given Josephson junction inductance.
+
+Note that simulation time can be reduced a lot by unsetting the Absorbing Boundary, 
+while not affecting the accuracy of the eigenmodes too much.
 
 # Arguments
 - `jj_inductance::Real`: the Josephson junction inductance ``L_{j}`` (nH).
 - `num_eigens::Int=2`: the number of eigenvalues to compute.
 - `save_eigens::Int=2`: the number of eigenvalues to save.
 - `target_freq::Real=3.0`: the target frequency of the eigenmodes to compute.
+- `with_resonator::Bool=false`: whether to include the readout resonator.
 """
 function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0, with_resonator::Bool=false)
     @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
@@ -89,10 +93,12 @@ function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2,
     palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
 end
 
-# eigen_qubit(16.710, 3, 3, 3.0)
-# eigen_qubit(21.70551, 3, 3, 3.0, true)
+if abspath(PROGRAM_FILE) == @__FILE__
+    # eigen_qubit(16.710, 3, 3, 3.0)
+    # eigen_qubit(21.70551, 3, 3, 3.0, true)
 
-# driven_lumped(3.5, 4.8, 0.0005)
-driven_lumped(6.9, 7.8, 0.001, 0, 16.78543, 21.70551)
-driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
-driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
+    # driven_lumped(3.5, 4.8, 0.0005)
+    driven_lumped(6.9, 7.8, 0.001, 0, 16.78543, 21.70551)
+    driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
+    driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
+end
