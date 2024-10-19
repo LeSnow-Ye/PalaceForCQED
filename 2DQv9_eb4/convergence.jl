@@ -17,7 +17,7 @@ function max_index_in_dir(dir_path::AbstractString)
 end
 
 function eigen_qubit(refine::Real, order::Int, test_id::Int=0, num_eigens::Int=2, target_freq::Real=3.0, with_resonator::Bool=false)
-    output_path = joinpath(OUTPUT_DIR, "RQ", "convergence_test_#$(test_index)", "eigen_r$(refine)o$(order)_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
+    output_path = joinpath(OUTPUT_DIR, "RQ", "convergence_test_#$(test_id)", "eigen_r$(refine)o$(order)_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
     ensure_path(output_path)
 
     # Generate mesh.

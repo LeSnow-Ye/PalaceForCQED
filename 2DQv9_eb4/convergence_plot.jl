@@ -3,7 +3,12 @@ using CSV, DataFrames
 using JSON
 using LsqFit
 
-function convergence_plot(path::AbstractString; eig_index::Int=1, ylim::Tuple{Real,Real}=(0, 0), fitting::Bool=false, save_filename::AbstractString="")
+function convergence_plot(path::AbstractString;
+    eig_index::Int=1,
+    ylim::Tuple{Real,Real}=(0, 0),
+    fitting::Bool=false,
+    save_filename::AbstractString=""
+)
     dirs = readdir(path)
     eig_r15o4 = 0.0
 
@@ -23,9 +28,9 @@ function convergence_plot(path::AbstractString; eig_index::Int=1, ylim::Tuple{Re
     legend_label = []
 
     for order in range(3, 6)
-        ref = Real[]
-        eig = Real[]
-        time = Real[]
+        ref = Float64[]
+        eig = Float64[]
+        time = Float64[]
         for refine in range(1, 9 - order)
             r = refine / 2 - 0.5
             try
