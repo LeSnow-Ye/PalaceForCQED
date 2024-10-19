@@ -30,8 +30,8 @@ function convergence_plot(path::AbstractString; eig_index::Int=1, ylim::Tuple{Re
             r = refine / 2 - 0.5
             try
                 dir = dirs[findfirst(x -> occursin("r$(r)o$(order)", x), dirs)]
-                df = CSV.read(joinpath(output_path, dir, "eig.csv"), DataFrame; normalizenames=true)
-                js = JSON.parsefile(joinpath(output_path, dir, "palace.json"))
+                df = CSV.read(joinpath(path, dir, "eig.csv"), DataFrame; normalizenames=true)
+                js = JSON.parsefile(joinpath(path, dir, "palace.json"))
 
                 push!(eig, df.Re_f_GHz_[eig_index])
                 push!(ref, r)
@@ -92,10 +92,12 @@ function convergence_plot(path::AbstractString; eig_index::Int=1, ylim::Tuple{Re
     display(f)
 end
 
-output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test")
-convergence_plot(output_path; save_filename="eig_qubit.svg", eig_index=1, ylim=(3.78, 3.9), fitting=true)
-convergence_plot(output_path; save_filename="eig_resonator.svg", eig_index=2, fitting=false)
+# output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test")
+# convergence_plot(output_path; save_filename="eig_qubit.svg", eig_index=1, ylim=(3.78, 3.9), fitting=true)
+# convergence_plot(output_path; save_filename="eig_resonator.svg", eig_index=2, fitting=false)
 
+output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "resonator", "convergence_test_#0")
+convergence_plot(output_path; save_filename="eig.svg", eig_index=1, fitting=false)
 
-output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "resonator", "convergence_test")
+output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "resonator", "convergence_test_#1")
 convergence_plot(output_path; save_filename="eig.svg", eig_index=1, fitting=false)
