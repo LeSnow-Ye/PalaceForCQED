@@ -132,8 +132,8 @@ function generate_mesh(config::GeneratorConfig)
     sep_dy = 0.5 * sep_dz
 
     # Mesh parameters
-    l_trace = 1.5 * config.trace_width_μm * (2.0^-config.refinement_level)
-    l_farfield = 3 * config.substrate_height_μm * (2.0^-(config.refinement_level * 0.25))
+    mesh_size_min = 1.0 * config.trace_width_μm * (2.0^-config.refinement_level)
+    mesh_size_max = 2.0 * config.substrate_height_μm * (2.0^-(config.refinement_level * 0.25))
 
     # Cut
     if !auto_detect
@@ -404,8 +404,8 @@ function generate_mesh(config::GeneratorConfig)
     trace_top_group = gmsh.model.addPhysicalGroup(2, trace_top, (basic_group_tag += 1), "trace_top")
 
     # Generate mesh
-    gmsh.option.setNumber("Mesh.MeshSizeMin", l_trace)
-    gmsh.option.setNumber("Mesh.MeshSizeMax", l_farfield)
+    gmsh.option.setNumber("Mesh.MeshSizeMin", mesh_size_min)
+    gmsh.option.setNumber("Mesh.MeshSizeMax", mesh_size_max)
     gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
     gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
     gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
@@ -429,12 +429,12 @@ function generate_mesh(config::GeneratorConfig)
     gmsh.model.mesh.field.setNumbers(1, "PointsList", gap_points)
     gmsh.model.mesh.field.setNumbers(1, "CurvesList", gap_curves)
     gmsh.model.mesh.field.setNumbers(1, "SurfacesList", gap)
-    gmsh.model.mesh.field.setNumber(1, "Sampling", ceil(max(dx, dy) / l_trace))
+    gmsh.model.mesh.field.setNumber(1, "Sampling", ceil(max(dx, dy) / mesh_size_min))
 
     gmsh.model.mesh.field.add("Threshold", 2)
     gmsh.model.mesh.field.setNumber(2, "InField", 1)
-    gmsh.model.mesh.field.setNumber(2, "SizeMin", l_trace)
-    gmsh.model.mesh.field.setNumber(2, "SizeMax", l_farfield)
+    gmsh.model.mesh.field.setNumber(2, "SizeMin", mesh_size_min)
+    gmsh.model.mesh.field.setNumber(2, "SizeMax", mesh_size_max)
     gmsh.model.mesh.field.setNumber(2, "DistMin", config.trace_width_μm)
     gmsh.model.mesh.field.setNumber(2, "DistMax", 0.9 * sep_dz)
 
