@@ -1,5 +1,3 @@
-include("../src/load_modules.jl")
-
 include("def_2DQv8_eb4.jl")
 # include("def_2DQv9_eb4.jl")
 
@@ -55,15 +53,19 @@ function electrostatic_RQ()
 end
 
 """
-    eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0)
+    eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0, with_resonator::Bool=false)
 
 Compute the eigenmodes of the qubit system with a given Josephson junction inductance.
+
+Note that simulation time can be reduced a lot by unsetting the Absorbing Boundary, 
+while not affecting the accuracy of the eigenmodes too much.
 
 # Arguments
 - `jj_inductance::Real`: the Josephson junction inductance ``L_{j}`` (nH).
 - `num_eigens::Int=2`: the number of eigenvalues to compute.
 - `save_eigens::Int=2`: the number of eigenvalues to save.
 - `target_freq::Real=3.0`: the target frequency of the eigenmodes to compute.
+- `with_resonator::Bool=false`: whether to include the readout resonator.
 """
 function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2, target_freq::Real=3.0, with_resonator::Bool=false)
     @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
@@ -89,10 +91,37 @@ function eigen_qubit(jj_inductance::Real, num_eigens::Int=2, save_eigens::Int=2,
     palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
 end
 
-# eigen_qubit(16.710, 3, 3, 3.0)
-# eigen_qubit(21.70551, 3, 3, 3.0, true)
+function eigen_resonator(num_eigens::Int=1, save_eigens::Int=1, target_freq::Real=3.0)
+    @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
 
-# driven_lumped(3.5, 4.8, 0.0005)
-driven_lumped(6.9, 7.8, 0.001, 0, 16.78543, 21.70551)
-driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
-driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
+    output_path = joinpath(OUTPUT_DIR, "resonator", "eigen_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
+    ensure_path(output_path)
+
+    # Generate mesh.
+    mesh_config = basic_config(GEO_PATH, output_path, RESONATOR_RECT, 300.0)
+    mesh_path = generate_mesh(mesh_config)
+
+    # Update parameters.
+    params = load_config(joinpath(CONFIG_DIR, "2DQv9_eb4_resonator_eigen.json"))
+    params["Model"]["Mesh"] = mesh_path
+    params["Problem"]["Output"] = output_path
+    params["Solver"]["Eigenmode"]["N"] = num_eigens
+    params["Solver"]["Eigenmode"]["Save"] = save_eigens
+    params["Solver"]["Eigenmode"]["Target"] = target_freq
+    save_config(params, joinpath(output_path, "palace-config.json"))
+
+    # Run Palace.
+    palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    # eigen_qubit(16.710, 3, 3, 3.0)
+    # eigen_qubit(21.70551, 3, 3, 3.0, true)
+
+    # driven_lumped(3.5, 4.8, 0.0005)
+    # driven_lumped(6.9, 7.8, 0.001, 0, 16.78543, 21.70551)
+    # driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
+    # driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
+
+    eigen_resonator(1, 1, 5.0)
+end
