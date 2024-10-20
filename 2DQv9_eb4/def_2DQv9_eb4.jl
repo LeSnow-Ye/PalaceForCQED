@@ -1,9 +1,13 @@
 include("../src/load_modules.jl")
 
-# Constants
+# Simulation
 const CONFIG_DIR = joinpath(@__DIR__, "defaul_configs")
 const OUTPUT_DIR = "/data/lesnow/2DQv9_eb4_data"
 const GEO_PATH = joinpath(@__DIR__, "geo_files/2DQv9_eb4_edit.geo")
+const DEFAULT_ORDER = 4
+const DEFAULT_REFINEMENT = 1.0
+
+# Mesh
 const RQ_RECT = Rectangle(40, 1160, -705, 105)
 const RESONATOR_RECT = Rectangle(120, 900, 1090, 1510)
 const QUBIT_RECT = Rectangle(625, 1160, -705, 105)
