@@ -1,6 +1,6 @@
 module PalaceRunner
 
-export palace_run, load_config, save_config, ensure_path
+export palace_run, load_config, save_config
 
 using JSON
 
@@ -27,8 +27,5 @@ function save_config(config::Any, config_path::AbstractString)
         return JSON.print(f, config, 4)
     end
 end
-
-
-
 
 end

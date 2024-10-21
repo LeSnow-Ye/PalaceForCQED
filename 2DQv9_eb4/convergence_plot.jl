@@ -3,13 +3,19 @@ using CSV, DataFrames
 using JSON
 using LsqFit
 
-function convergence_plot(path::AbstractString; eig_index::Int=1, ylim::Tuple{Real,Real}=(0, 0), fitting::Bool=false, save_filename::AbstractString="")
+function convergence_plot(path::AbstractString;
+    eig_index::Int=1,
+    ylim::Tuple{Real,Real}=(0, 0),
+    fitting::Bool=false,
+    title::AbstractString="",
+    save_filename::AbstractString=""
+)
     dirs = readdir(path)
     eig_r15o4 = 0.0
 
     f = Figure()
     ax = Axis(f[1, 1];
-        title="Convergence Test for Order and Refinement Level",
+        title=title == "" ? "Convergence Test" : title,
         xlabel="Refinement Level",
         ylabel="Eigenmode Freq. (GHz)",
         xticks=0:0.5:3.0
@@ -23,9 +29,9 @@ function convergence_plot(path::AbstractString; eig_index::Int=1, ylim::Tuple{Re
     legend_label = []
 
     for order in range(3, 6)
-        ref = Real[]
-        eig = Real[]
-        time = Real[]
+        ref = Float64[]
+        eig = Float64[]
+        time = Float64[]
         for refine in range(1, 9 - order)
             r = refine / 2 - 0.5
             try
@@ -92,12 +98,12 @@ function convergence_plot(path::AbstractString; eig_index::Int=1, ylim::Tuple{Re
     display(f)
 end
 
-# output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test")
-# convergence_plot(output_path; save_filename="eig_qubit.svg", eig_index=1, ylim=(3.78, 3.9), fitting=true)
-# convergence_plot(output_path; save_filename="eig_resonator.svg", eig_index=2, fitting=false)
+output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test_#0")
+convergence_plot(output_path; title="Convergence Test for RQ (Qubit)", save_filename="plot_qubit.svg", eig_index=1, ylim=(3.78, 3.9), fitting=true)
+convergence_plot(output_path; title="Convergence Test for RQ (resonator)", save_filename="plot_resonator.svg", eig_index=2, fitting=false)
 
 output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "resonator", "convergence_test_#0")
-convergence_plot(output_path; save_filename="eig.svg", eig_index=1, fitting=false)
+convergence_plot(output_path; title="Convergence Test for resonator", save_filename="plot.svg", eig_index=1, fitting=false)
 
 output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "resonator", "convergence_test_#1")
-convergence_plot(output_path; save_filename="eig.svg", eig_index=1, fitting=false)
+convergence_plot(output_path; title="Convergence Test for resonator (new)", save_filename="plot.svg", ylim=(7.5, 7.6), eig_index=1, fitting=false)
