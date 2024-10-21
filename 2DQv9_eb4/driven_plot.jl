@@ -1,5 +1,4 @@
-include("../src/Utils.jl")
-using .Utils
+using PalaceForCQED.Utils
 
 using CairoMakie
 using CSV, DataFrames
@@ -10,6 +9,7 @@ function driven_plot(path::AbstractString;
     show_arg::Bool=true,
     ylim_arg::Tuple{Real,Real}=(0, 0),
     ref_data::Vector{<:Real}=Float64[],
+    tol::Real=0.0,
     figure_size::Tuple{Real,Real}=(600, 450),
     save_filename::AbstractString=""
 )
@@ -79,6 +79,14 @@ function driven_plot(path::AbstractString;
         offset=(0, -5)
     )
 
+    # Tol
+    if tol != 0.0
+        valley_round = vcat(freq[valley_indices] .* (1 + tol), freq[valley_indices] .* (1 - tol))
+        vl_tol = vlines!(ax, valley_round; color=:black, linestyle=(:dashdot))
+        push!(legend_icon, vl_tol)
+        push!(legend_label, "Valley ± $(tol * 100)%")
+    end
+
     # Reference Data
     if length(ref_data) > 0
         vl = vlines!(ax, ref_data; color=:gray, linestyle=:dash, linewidth=1, label="Reference Data")
@@ -97,10 +105,10 @@ function driven_plot(path::AbstractString;
 end
 
 output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "driven", "lumped_3.83-3.93_Step0.0001_2024-10-11T151550")
-driven_plot(output_path; show_arg=false, ref_data=[3.88017], save_filename="plot.svg")
+driven_plot(output_path; show_arg=false, ref_data=[3.88017], tol=0.003, save_filename="plot.svg")
 
 output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "driven", "lumped_4.35-4.45_Step0.0001_2024-10-11T132010")
-driven_plot(output_path; show_arg=false, ref_data=[4.38893], save_filename="plot.svg")
+driven_plot(output_path; xlim=(4.37, 4.45), show_arg=false, ref_data=[4.38893], tol=0.003, save_filename="plot.svg")
 
 output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "driven", "lumped_6.9-7.8_Step0.001_2024-10-11T103611")
 refs = [7.178727, 7.2684245, 7.5484463, 7.644717]
