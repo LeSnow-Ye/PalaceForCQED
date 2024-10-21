@@ -1,5 +1,3 @@
-include("../src/load_modules.jl")
-
 # Simulation
 const CONFIG_DIR = joinpath(@__DIR__, "defaul_configs")
 const OUTPUT_DIR = "/data/lesnow/2DQv8_eb4_data"
