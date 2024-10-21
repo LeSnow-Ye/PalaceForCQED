@@ -59,7 +59,12 @@ function max_index_in_dir(dir_path::AbstractString)::Int
 
     for dir in readdir(dir_path)
         if isdir(joinpath(dir_path, dir))
-            index = parse(Int, split(dir, "#")[end])
+            m = match(r"#(\d)$", dir)
+            if m === nothing
+                continue
+            end
+
+            index = parse(Int, m.captures[end])
             max_index = max(max_index, index)
         end
     end
