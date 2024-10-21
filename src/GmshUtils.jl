@@ -272,8 +272,13 @@ function uniformize(
 
     open(geo_file_path, "r") do input
         open(output_path, "w") do output
+            if !any(line -> occursin("SetFactory(\"OpenCASCADE\");", line), eachline(input))
+                write(output, "SetFactory(\"OpenCASCADE\");\n\n")
+            end
+
             buffer = ""
             section_length = 0
+            seek(input, 0)
             for line in eachline(input)
                 if startswith(line, "Plane Surface")
                     write(output, uniformized_surface_str(buffer, min_length))
