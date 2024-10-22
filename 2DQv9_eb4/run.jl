@@ -7,24 +7,31 @@ include("def_2DQv8_eb4.jl")
 function driven_lumped(
     MinFreq::Float64,
     MaxFreq::Float64,
-    FreqStep::Float64=0.001,
-    SaveStep::Integer=0,
-    lj1::Real=-1,
-    lj2::Real=-1;
-    refine::Real=DEFAULT_REFINEMENT,
-    order::Int=DEFAULT_ORDER,
-    output_path::AbstractString=""
+    FreqStep::Float64 = 0.001,
+    SaveStep::Integer = 0,
+    lj1::Real = -1,
+    lj2::Real = -1;
+    refine::Real = DEFAULT_REFINEMENT,
+    order::Int = DEFAULT_ORDER,
+    output_path::AbstractString = "",
 )
-    default_path = joinpath(OUTPUT_DIR, "driven/lumped_$(MinFreq)-$(MaxFreq)_Step$(FreqStep)_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
+    default_path = joinpath(
+        OUTPUT_DIR,
+        "driven/lumped_$(MinFreq)-$(MaxFreq)_Step$(FreqStep)_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))",
+    )
     output_path = output_path == "" ? default_path : output_path
     ensure_path(output_path)
 
     # Generate mesh.
-    mesh_config = basic_config(GEO_PATH, output_path, Rectangle(), 200.0;
-        excitation_type=MeshGenerator.LumpedPort,
-        lumped_ports=Rectangle[EXCITAION_LUMPED_PORT],
-        jjs=JUNCTIONS,
-        refinement_level=refine,
+    mesh_config = basic_config(
+        GEO_PATH,
+        output_path,
+        Rectangle(),
+        200.0;
+        excitation_type = MeshGenerator.LumpedPort,
+        lumped_ports = Rectangle[EXCITAION_LUMPED_PORT],
+        jjs = JUNCTIONS,
+        refinement_level = refine,
     )
     mesh_path = generate_mesh(mesh_config)
 
@@ -52,11 +59,18 @@ function driven_lumped(
 end
 
 function electrostatic_RQ()
-    output_path = joinpath(OUTPUT_DIR, "RQ/electrostatic_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
+    output_path =
+        joinpath(OUTPUT_DIR, "RQ/electrostatic_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
     ensure_path(output_path)
 
     # Generate mesh.
-    mesh_config = basic_config(GEO_PATH, output_path, RQ_RECT, 300.0; split_metal_physical_group=true)
+    mesh_config = basic_config(
+        GEO_PATH,
+        output_path,
+        RQ_RECT,
+        300.0;
+        split_metal_physical_group = true,
+    )
     mesh_path = generate_mesh(mesh_config)
 
     # Update parameters.
@@ -98,17 +112,21 @@ while not affecting the accuracy of the eigenmodes too much.
 """
 function eigen_qubit(
     jj_inductance::Real,
-    num_eigens::Int=2,
-    save_eigens::Int=2,
-    target_freq::Real=3.0;
-    with_resonator::Bool=false,
-    refine::Real=DEFAULT_REFINEMENT,
-    order::Int=DEFAULT_ORDER,
-    output_path::AbstractString=""
+    num_eigens::Int = 2,
+    save_eigens::Int = 2,
+    target_freq::Real = 3.0;
+    with_resonator::Bool = false,
+    refine::Real = DEFAULT_REFINEMENT,
+    order::Int = DEFAULT_ORDER,
+    output_path::AbstractString = "",
 )
     @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
 
-    default_path = joinpath(OUTPUT_DIR, with_resonator ? "RQ" : "qubit", "eigen_L$(jj_inductance)nH_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
+    default_path = joinpath(
+        OUTPUT_DIR,
+        with_resonator ? "RQ" : "qubit",
+        "eigen_L$(jj_inductance)nH_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))",
+    )
     output_path = output_path == "" ? default_path : output_path
     ensure_path(output_path)
 
@@ -116,9 +134,10 @@ function eigen_qubit(
     mesh_config = basic_config(
         GEO_PATH,
         output_path,
-        with_resonator ? RQ_RECT : QUBIT_RECT, 300.0;
-        jjs=[JUNCTIONS[2]],
-        refinement_level=refine
+        with_resonator ? RQ_RECT : QUBIT_RECT,
+        300.0;
+        jjs = [JUNCTIONS[2]],
+        refinement_level = refine,
     )
     mesh_path = generate_mesh(mesh_config)
 
@@ -138,16 +157,20 @@ function eigen_qubit(
 end
 
 function eigen_resonator(
-    num_eigens::Int=1,
-    save_eigens::Int=1,
-    target_freq::Real=3.0;
-    refine::Real=DEFAULT_REFINEMENT,
-    order::Int=DEFAULT_ORDER,
-    output_path::AbstractString=""
+    num_eigens::Int = 1,
+    save_eigens::Int = 1,
+    target_freq::Real = 3.0;
+    refine::Real = DEFAULT_REFINEMENT,
+    order::Int = DEFAULT_ORDER,
+    output_path::AbstractString = "",
 )
     @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
 
-    default_path = joinpath(OUTPUT_DIR, "resonator", "eigen_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
+    default_path = joinpath(
+        OUTPUT_DIR,
+        "resonator",
+        "eigen_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))",
+    )
     output_path = output_path == "" ? default_path : output_path
     ensure_path(output_path)
 
@@ -157,7 +180,7 @@ function eigen_resonator(
         output_path,
         RESONATOR_RECT,
         300.0;
-        refinement_level=refine
+        refinement_level = refine,
     )
     mesh_path = generate_mesh(mesh_config)
 

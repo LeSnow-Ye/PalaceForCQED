@@ -95,7 +95,10 @@ function trim(str::String)
 end
 
 function parse_point(str::String)
-    m = match(r"Point\((\d+)\)\=\{([+-]?\d+\.\d+e[+-]?\d+),([+-]?\d+\.\d+e[+-]?\d+),([+-]?\d+\.\d+e[+-]?\d+)\}", trim(str))
+    m = match(
+        r"Point\((\d+)\)\=\{([+-]?\d+\.\d+e[+-]?\d+),([+-]?\d+\.\d+e[+-]?\d+),([+-]?\d+\.\d+e[+-]?\d+)\}",
+        trim(str),
+    )
     if m === nothing
         error("Invalid string format: $str")
     end
@@ -136,10 +139,14 @@ function parse_line_loop(str::String)
     return LineLoop(line_loop_id, line_ids)
 end
 
-function uniformized_line_points(buffer_line_points::Vector{Point}, target_segment_length::Float64)
+function uniformized_line_points(
+    buffer_line_points::Vector{Point},
+    target_segment_length::Float64,
+)
     total_length::Float64 = 0.0
-    for i in 1:length(buffer_line_points)-1
-        total_length += length_between_points(buffer_line_points[i], buffer_line_points[i+1])
+    for i = 1:length(buffer_line_points)-1
+        total_length +=
+            length_between_points(buffer_line_points[i], buffer_line_points[i+1])
     end
 
     # Unnecessary to refine the points here. It can be done by Gmsh later.
@@ -154,12 +161,13 @@ function uniformized_line_points(buffer_line_points::Vector{Point}, target_segme
     push!(new_line_points, buffer_line_points[1])
 
     buf = l
-    for i in 2:length(buffer_line_points)
+    for i = 2:length(buffer_line_points)
         p1 = buffer_line_points[i-1]
         p2 = buffer_line_points[i]
         segment_length = length_between_points(p1, p2)
 
-        while buf < segment_length && !(i == length(buffer_line_points) && ((segment_length - buf) < 0.2 * l))
+        while buf < segment_length &&
+            !(i == length(buffer_line_points) && ((segment_length - buf) < 0.2 * l))
             x = p1.x + (p2.x - p1.x) * buf / segment_length
             y = p1.y + (p2.y - p1.y) * buf / segment_length
             z = p1.z + (p2.z - p1.z) * buf / segment_length
@@ -173,39 +181,59 @@ function uniformized_line_points(buffer_line_points::Vector{Point}, target_segme
     return new_line_points
 end
 
-function uniformized_line_loop(line_loop::LineLoop, lines::Vector{Line}, points::Vector{Point}, min_length::Float64)
+function uniformized_line_loop(
+    line_loop::LineLoop,
+    lines::Vector{Line},
+    points::Vector{Point},
+    min_length::Float64,
+)
     # Extract points forming the line loop and construct a new line loop with uniformized points.
 
     new_line_loop_points::Vector{Point} = []
     buffer_line_points::Vector{Point} = []
-    for line_id = line_loop.line_ids
+    for line_id in line_loop.line_ids
         line = lines[findfirst(l -> l.id == line_id, lines)]
 
         @assert length(line.point_ids) == 2 # Only support lines with two points
 
         if is_vertical_or_horizontal(line, points)
             if length(buffer_line_points) > 0
-                new_line_loop_points = [new_line_loop_points; uniformized_line_points(buffer_line_points, min_length)]
+                new_line_loop_points = [
+                    new_line_loop_points
+                    uniformized_line_points(buffer_line_points, min_length)
+                ]
                 buffer_line_points = []
             end
 
-            push!(new_line_loop_points, points[findfirst(p -> p.id == line.point_ids[1], points)])
+            push!(
+                new_line_loop_points,
+                points[findfirst(p -> p.id == line.point_ids[1], points)],
+            )
         else
-            push!(buffer_line_points, points[findfirst(p -> p.id == line.point_ids[1], points)])
+            push!(
+                buffer_line_points,
+                points[findfirst(p -> p.id == line.point_ids[1], points)],
+            )
         end
     end
 
     if length(buffer_line_points) > 0
-        new_line_loop_points = [new_line_loop_points; uniformized_line_points(buffer_line_points, min_length)]
+        new_line_loop_points =
+            [new_line_loop_points; uniformized_line_points(buffer_line_points, min_length)]
     end
 
-    last_point_id = lines[findfirst(l -> l.id == line_loop.line_ids[end], lines)].point_ids[2]
-    new_line_loop_points = [new_line_loop_points; points[findfirst(p -> p.id == last_point_id, points)]]
+    last_point_id =
+        lines[findfirst(l -> l.id == line_loop.line_ids[end], lines)].point_ids[2]
+    new_line_loop_points =
+        [new_line_loop_points; points[findfirst(p -> p.id == last_point_id, points)]]
     @assert length(new_line_loop_points) - 1 <= length(line_loop.line_ids)
 
     new_lines::Vector{Line} = []
-    for i in 1:length(new_line_loop_points)-1
-        line = Line(line_loop.line_ids[i], [new_line_loop_points[i].id, new_line_loop_points[i+1].id])
+    for i = 1:length(new_line_loop_points)-1
+        line = Line(
+            line_loop.line_ids[i],
+            [new_line_loop_points[i].id, new_line_loop_points[i+1].id],
+        )
         push!(new_lines, line)
     end
 
@@ -236,7 +264,8 @@ function uniformized_surface_str(raw_surface_str::String, min_length::Float64)
 
     @assert length(line_loops) == 1
 
-    new_line_loop, new_lines, new_line_loop_points = uniformized_line_loop(line_loops[1], lines, points, min_length)
+    new_line_loop, new_lines, new_line_loop_points =
+        uniformized_line_loop(line_loops[1], lines, points, min_length)
 
     for point in new_line_loop_points
         buffer *= geo_string(point)
@@ -264,7 +293,8 @@ Uniformize the geo file by removing lines with small angle difference and small 
 function uniformize(
     geo_file_path::String,
     output_path::String;
-    min_length::Float64=2 * 20.0 * (2.0^-1.5))
+    min_length::Float64 = 2 * 20.0 * (2.0^-1.5),
+)
 
     if !isdir(dirname(output_path))
         mkpath(dirname(output_path))
