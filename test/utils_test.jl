@@ -1,6 +1,3 @@
-using Test
-using PalaceForCQED.Utils
-
 @testset "Utils.jl" begin
     # Happy Path
     begin
@@ -41,5 +38,5 @@ using PalaceForCQED.Utils
         @test max_index_in_dir(dir_path) == 1
     end
 
-    rm("tmp", force=true, recursive=true)
+    rm("tmp", force = true, recursive = true)
 end
