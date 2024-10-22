@@ -5,7 +5,8 @@ include("Utils.jl")
 include("PalaceRunner.jl")
 
 using .MeshGenerator
-export GeneratorConfig, Rectangle, ExcitationType, generate_mesh, basic_config, to_electrostatic!
+export GeneratorConfig,
+    Rectangle, ExcitationType, generate_mesh, basic_config, to_electrostatic!
 
 using .PalaceRunner
 export palace_run, load_config, save_config

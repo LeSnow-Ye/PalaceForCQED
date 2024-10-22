@@ -10,6 +10,6 @@ const RQ_RECT = Rectangle(40, 1160, -705, 105)
 const RESONATOR_RECT = Rectangle(120, 900, 1090, 1510)
 const QUBIT_RECT = Rectangle(625, 1160, -705, 105)
 const WAVE_RECT = Rectangle(-2400, 2400, -2293.5, 2400) # Wave port should be at the boundary of the domain.
-const JUNCTIONS = Rectangle[Rectangle(-955, -890, 650, 660), Rectangle(860, 925, -280, -285)]
+const JUNCTIONS =
+    Rectangle[Rectangle(-955, -890, 650, 660), Rectangle(860, 925, -280, -285)]
 const EXCITAION_LUMPED_PORT = Rectangle(-10, 10, -2350, -2293.5)
-
