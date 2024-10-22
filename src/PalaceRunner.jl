@@ -8,7 +8,11 @@ using JSON
 Run Palace. Add "--use-hwthread-cpus" to `launcher_args` for multi-cpu machines.
 See https://www.open-mpi.org/doc/v4.0/man1/mpirun.1.php for more details.
 """
-function palace_run(config_path::AbstractString, np::Integer, launcher_args::AbstractString="")
+function palace_run(
+    config_path::AbstractString,
+    np::Integer,
+    launcher_args::AbstractString = "",
+)
     if launcher_args == ""
         run(`palace -np $(np) $(config_path)`)
     else

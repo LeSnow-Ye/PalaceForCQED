@@ -21,8 +21,13 @@ function sweep_Lj(inds::Vector{Float64})
 
     test_id = max_index_in_dir(joinpath(OUTPUT_DIR, "Lj")) + 1
     for ind in inds
-        output_path = joinpath(OUTPUT_DIR, "Lj", "#$(test_id)", "eigen_L$(ind)nH_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))")
-        eigen_qubit(ind, 2, 0, 3.0; output_path=output_path)
+        output_path = joinpath(
+            OUTPUT_DIR,
+            "Lj",
+            "#$(test_id)",
+            "eigen_L$(ind)nH_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))",
+        )
+        eigen_qubit(ind, 2, 0, 3.0; output_path = output_path)
     end
 end
 
