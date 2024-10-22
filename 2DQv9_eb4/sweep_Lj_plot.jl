@@ -3,17 +3,19 @@ using CSV, DataFrames
 using JSON
 using LsqFit
 
-function sweep_Lj_plot(path::AbstractString;
-    eig_index::Int=1,
-    ylim::Tuple{Real,Real}=(0, 0),
-    save_filename::AbstractString=""
+function sweep_Lj_plot(
+    path::AbstractString;
+    eig_index::Int = 1,
+    ylim::Tuple{Real,Real} = (0, 0),
+    save_filename::AbstractString = "",
 )
     # Plot Setup
     f = Figure()
-    ax = Axis(f[1, 1];
-        title="Josephson Inductance Sweep",
-        xlabel="Lj (nH)",
-        ylabel="Eigenmode Freq. (GHz)"
+    ax = Axis(
+        f[1, 1];
+        title = "Josephson Inductance Sweep",
+        xlabel = "Lj (nH)",
+        ylabel = "Eigenmode Freq. (GHz)",
     )
 
     if ylim != (0, 0)
@@ -26,7 +28,11 @@ function sweep_Lj_plot(path::AbstractString;
     for dir in readdir(path)
         if isdir(joinpath(path, dir))
             try
-                df = CSV.read(joinpath(path, dir, "eig.csv"), DataFrame; normalizenames=true)
+                df = CSV.read(
+                    joinpath(path, dir, "eig.csv"),
+                    DataFrame;
+                    normalizenames = true,
+                )
                 push!(eig, df.Re_f_GHz_[eig_index])
                 m = match(r"L(\d+\.\d+)nH", dir)
                 push!(lj, parse(Float64, m.captures[1]))
@@ -46,13 +52,19 @@ function sweep_Lj_plot(path::AbstractString;
     y_fit = model(x_fit, fit.param)
 
     # Plotting
-    scatter!(ax, lj, eig; label="Data")
-    lines!(ax, x_fit, y_fit; label="Fit")
-    p = round.(fit.param[1]; digits=4)
-    text!(ax, 0.55, 0.35, text=L"f=\frac{2 \pi}{\sqrt{L_{j}  C}} =\frac{%$(p)}{\sqrt{L_{j}}}", space=:relative)
+    scatter!(ax, lj, eig; label = "Data")
+    lines!(ax, x_fit, y_fit; label = "Fit")
+    p = round.(fit.param[1]; digits = 4)
+    text!(
+        ax,
+        0.55,
+        0.35,
+        text = L"f=\frac{2 \pi}{\sqrt{L_{j}  C}} =\frac{%$(p)}{\sqrt{L_{j}}}",
+        space = :relative,
+    )
 
     # Legend
-    axislegend(ax, position=:rt)
+    axislegend(ax, position = :rt)
 
     # Save
     if save_filename != ""
@@ -64,4 +76,4 @@ end
 
 
 output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "Lj", "#0")
-sweep_Lj_plot(output_path, save_filename="plot.svg")
+sweep_Lj_plot(output_path, save_filename = "plot.svg")
