@@ -18,9 +18,9 @@ function find_valleys(arr::Vector{<:Real}, n::Int)::Vector{Int}
     len = length(arr)
     valley_indices = Int[]
 
-    for i in (n+1):(len-n)
+    for i = (n+1):(len-n)
         is_valley = true
-        for j in (i-n):(i+n)
+        for j = (i-n):(i+n)
             if arr[j] < arr[i]
                 is_valley = false
                 break

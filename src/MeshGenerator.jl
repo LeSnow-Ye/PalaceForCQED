@@ -5,7 +5,8 @@ using .GmshUtils
 
 using Gmsh: gmsh
 
-export GeneratorConfig, Rectangle, ExcitationType, generate_mesh, basic_config, to_electrostatic!
+export GeneratorConfig,
+    Rectangle, ExcitationType, generate_mesh, basic_config, to_electrostatic!
 
 struct Rectangle
     x_min::Float64
@@ -13,11 +14,17 @@ struct Rectangle
     y_min::Float64
     y_max::Float64
 
-    Rectangle(x_min=0.0, x_max=0.0, y_min=0.0, y_max=0.0) = new(x_min, x_max, y_min, y_max)
+    Rectangle(x_min = 0.0, x_max = 0.0, y_min = 0.0, y_max = 0.0) =
+        new(x_min, x_max, y_min, y_max)
 end
 
 function included_in_rectangle(obj::Rectangle, rect::Rectangle)
-    return (obj.x_min >= rect.x_min && obj.x_max <= rect.x_max && obj.y_min >= rect.y_min && obj.y_max <= rect.y_max)
+    return (
+        obj.x_min >= rect.x_min &&
+        obj.x_max <= rect.x_max &&
+        obj.y_min >= rect.y_min &&
+        obj.y_max <= rect.y_max
+    )
 end
 
 @enum ExcitationType begin
@@ -64,15 +71,15 @@ function basic_config(
     output_dir::AbstractString,
     gaps_area::Rectangle,
     area_expanded_from_gaps::Real;
-    kwargs...
+    kwargs...,
 )
     return GeneratorConfig(
-        geo_file_path=geo_file_path,
-        output_dir=output_dir,
-        gaps_area=gaps_area,
-        area_expanded_from_gaps=area_expanded_from_gaps,
-        excitation_type=NoExcitation;
-        kwargs...
+        geo_file_path = geo_file_path,
+        output_dir = output_dir,
+        gaps_area = gaps_area,
+        area_expanded_from_gaps = area_expanded_from_gaps,
+        excitation_type = NoExcitation;
+        kwargs...,
     )
 end
 
@@ -86,12 +93,22 @@ function check_config(config::GeneratorConfig)
 end
 
 function gmsh_add_rectangle(rect::Rectangle)
-    return gmsh.model.occ.add_rectangle(rect.x_min, rect.y_min, 0.0, rect.x_max - rect.x_min, rect.y_max - rect.y_min)
+    return gmsh.model.occ.add_rectangle(
+        rect.x_min,
+        rect.y_min,
+        0.0,
+        rect.x_max - rect.x_min,
+        rect.y_max - rect.y_min,
+    )
 end
 
 function preprocess_geo_file!(config::GeneratorConfig)
     new_geo_file_path = joinpath(config.output_dir, "uniformized.geo")
-    uniformize(config.geo_file_path, new_geo_file_path; min_length=config.trace_width_μm * (2.0^-config.refinement_level))
+    uniformize(
+        config.geo_file_path,
+        new_geo_file_path;
+        min_length = config.trace_width_μm * (2.0^-config.refinement_level),
+    )
     config.geo_file_path = new_geo_file_path
 end
 
@@ -113,15 +130,19 @@ function generate_mesh(config::GeneratorConfig)
     auto_detect = (config.gaps_area === Rectangle())
     if auto_detect
         for dim_tag in gaps_raw_dimtags
-            xmin, ymin, zmin, xmax, ymax, zmax = gmsh.model.occ.get_bounding_box(dim_tag[1], dim_tag[2])
-            x_min = round(min(x_min, xmin), digits=3)
-            y_min = round(min(y_min, ymin), digits=3)
-            x_max = round(max(x_max, xmax), digits=3)
-            y_max = round(max(y_max, ymax), digits=3)
-            @assert round(zmin, digits=3) == round(zmax, digits=3) == 0.0
+            xmin, ymin, zmin, xmax, ymax, zmax =
+                gmsh.model.occ.get_bounding_box(dim_tag[1], dim_tag[2])
+            x_min = round(min(x_min, xmin), digits = 3)
+            y_min = round(min(y_min, ymin), digits = 3)
+            x_max = round(max(x_max, xmax), digits = 3)
+            y_max = round(max(y_max, ymax), digits = 3)
+            @assert round(zmin, digits = 3) == round(zmax, digits = 3) == 0.0
         end
     else
-        x_min, y_min, x_max, y_max = config.gaps_area.x_min, config.gaps_area.y_min, config.gaps_area.x_max, config.gaps_area.y_max
+        x_min, y_min, x_max, y_max = config.gaps_area.x_min,
+        config.gaps_area.y_min,
+        config.gaps_area.x_max,
+        config.gaps_area.y_max
     end
 
     dx = x_max - x_min
@@ -133,7 +154,8 @@ function generate_mesh(config::GeneratorConfig)
 
     # Mesh parameters
     mesh_size_min = 1.0 * config.trace_width_μm * (2.0^-config.refinement_level)
-    mesh_size_max = 2.0 * config.substrate_height_μm * (2.0^-(config.refinement_level * 0.25))
+    mesh_size_max =
+        2.0 * config.substrate_height_μm * (2.0^-(config.refinement_level * 0.25))
 
     # Cut
     if !auto_detect
@@ -164,8 +186,12 @@ function generate_mesh(config::GeneratorConfig)
     metal_boundary_top = typeof(metal_boundary)(undef, 0)
     metal = typeof(metal_boundary)(undef, 0)
     if config.metal_height_μm > 0
-        metal_dimtags =
-            gmsh.model.occ.extrude([(2, x) for x in metal_boundary], 0.0, 0.0, config.metal_height_μm)
+        metal_dimtags = gmsh.model.occ.extrude(
+            [(2, x) for x in metal_boundary],
+            0.0,
+            0.0,
+            config.metal_height_μm,
+        )
         metal = [x[2] for x in filter(x -> x[1] == 3, metal_dimtags)]
         for domain in metal
             _, boundary = gmsh.model.occ.getSurfaceLoops(domain)
@@ -176,10 +202,18 @@ function generate_mesh(config::GeneratorConfig)
     end
 
     # Substrate
-    substrate = gmsh.model.occ.addBox(x_min, y_min, -config.substrate_height_μm, dx, dy, config.substrate_height_μm)
+    substrate = gmsh.model.occ.addBox(
+        x_min,
+        y_min,
+        -config.substrate_height_μm,
+        dx,
+        dy,
+        config.substrate_height_μm,
+    )
 
     # Exterior box
-    add_wave_port = config.excitation_type == WavePort || config.excitation_type == CoaxWavePort
+    add_wave_port =
+        config.excitation_type == WavePort || config.excitation_type == CoaxWavePort
     if add_wave_port
         # TODO: now still need to add the port manually
         domain = gmsh.model.occ.addBox(
@@ -188,7 +222,7 @@ function generate_mesh(config::GeneratorConfig)
             -sep_dz,
             dx + 2.0 * sep_dx,
             dy + sep_dy,
-            2.0 * sep_dz
+            2.0 * sep_dz,
         )
     else
         domain = gmsh.model.occ.addBox(
@@ -197,7 +231,7 @@ function generate_mesh(config::GeneratorConfig)
             -sep_dz,
             dx + 2.0 * sep_dx,
             dy + 2.0 * sep_dy,
-            2.0 * sep_dz
+            2.0 * sep_dz,
         )
     end
 
@@ -241,7 +275,10 @@ function generate_mesh(config::GeneratorConfig)
             pb = gmsh.model.occ.addPoint(dxp1, y_min, -dzp1)
             l = gmsh.model.occ.addLine(pa, pb)
             global p1 = first(
-                filter(x -> x[1] == 2, gmsh.model.occ.extrude([1, l], 0.0, 0.0, dzp1 + dzp2))
+                filter(
+                    x -> x[1] == 2,
+                    gmsh.model.occ.extrude([1, l], 0.0, 0.0, dzp1 + dzp2),
+                ),
             )[2]
         end
     end
@@ -251,8 +288,12 @@ function generate_mesh(config::GeneratorConfig)
             pa = gmsh.model.occ.addPoint(x_min - sep_dx, y_min, -sep_dz)
             pb = gmsh.model.occ.addPoint(x_max + sep_dx, y_min, -sep_dz)
             l = gmsh.model.occ.addLine(pa, pb)
-            global p2 =
-                first(filter(x -> x[1] == 2, gmsh.model.occ.extrude([1, l], 0.0, 0.0, 2.0 * sep_dz)))[2]
+            global p2 = first(
+                filter(
+                    x -> x[1] == 2,
+                    gmsh.model.occ.extrude([1, l], 0.0, 0.0, 2.0 * sep_dz),
+                ),
+            )[2]
         end
     end
 
@@ -270,8 +311,8 @@ function generate_mesh(config::GeneratorConfig)
         last.(
             collect(
                 Iterators.flatten(
-                    geom_map[findall(x -> x[1] == 3 && x[2] in metal, geom_dimtags)]
-                )
+                    geom_map[findall(x -> x[1] == 3 && x[2] in metal, geom_dimtags)],
+                ),
             )
         )
 
@@ -294,8 +335,8 @@ function generate_mesh(config::GeneratorConfig)
                     [(3, z) for z in metal_domains],
                     false,
                     false,
-                    false
-                )
+                    false,
+                ),
             )
         )
             normal = gmsh.model.getNormal(tag, [0, 0])
@@ -309,9 +350,12 @@ function generate_mesh(config::GeneratorConfig)
         empty!(metal_domains)
     end
 
-    air_domain_group = gmsh.model.addPhysicalGroup(3, [air_domain], (basic_group_tag += 1), "air")
-    si_domain_group = gmsh.model.addPhysicalGroup(3, [si_domain], (basic_group_tag += 1), "si")
-    metal_domain_group = gmsh.model.addPhysicalGroup(3, metal_domains, (basic_group_tag += 1), "metal")
+    air_domain_group =
+        gmsh.model.addPhysicalGroup(3, [air_domain], (basic_group_tag += 1), "air")
+    si_domain_group =
+        gmsh.model.addPhysicalGroup(3, [si_domain], (basic_group_tag += 1), "si")
+    metal_domain_group =
+        gmsh.model.addPhysicalGroup(3, metal_domains, (basic_group_tag += 1), "metal")
 
     if add_wave_port
         port1 = last.(geom_map[findfirst(x -> x == (2, p1), geom_dimtags)])
@@ -329,9 +373,9 @@ function generate_mesh(config::GeneratorConfig)
                 Iterators.flatten(
                     geom_map[findall(
                         x -> x[1] == 2 && x[2] in domain_boundary,
-                        geom_dimtags
-                    )]
-                )
+                        geom_dimtags,
+                    )],
+                ),
             )
         )
 
@@ -339,7 +383,8 @@ function generate_mesh(config::GeneratorConfig)
         filter!(x -> !(x in port1 || x in end1), farfield)
     end
 
-    farfield_group = gmsh.model.addPhysicalGroup(2, farfield, (basic_group_tag += 1), "farfield")
+    farfield_group =
+        gmsh.model.addPhysicalGroup(2, farfield, (basic_group_tag += 1), "farfield")
 
     junction_dimtags = []
     for (i, junction_id) in enumerate(junctions_ids)
@@ -361,24 +406,23 @@ function generate_mesh(config::GeneratorConfig)
                 Iterators.flatten(
                     geom_map[findall(
                         x -> x[1] == 2 && x[2] in metal_boundary,
-                        geom_dimtags
-                    )]
-                )
+                        geom_dimtags,
+                    )],
+                ),
             )
         )
     gap =
         last.(
             collect(
-                Iterators.flatten(
-                    geom_map[findall(x -> x in gaps_dimtags, geom_dimtags)]
-                )
+                Iterators.flatten(geom_map[findall(x -> x in gaps_dimtags, geom_dimtags)]),
             )
         )
 
     setdiff!(gap, junction_dimtags, lumped_port_dimtags)
 
     if !config.split_metal_physical_group
-        trace_group = gmsh.model.addPhysicalGroup(2, trace, (basic_group_tag += 1), "metal_layer")
+        trace_group =
+            gmsh.model.addPhysicalGroup(2, trace, (basic_group_tag += 1), "metal_layer")
     else
         for (i, metal_layer) in enumerate(trace)
             group_tag = (basic_group_tag += 1)
@@ -395,13 +439,14 @@ function generate_mesh(config::GeneratorConfig)
                 Iterators.flatten(
                     geom_map[findall(
                         x -> x[1] == 2 && x[2] in metal_boundary_top,
-                        geom_dimtags
-                    )]
-                )
+                        geom_dimtags,
+                    )],
+                ),
             )
         )
 
-    trace_top_group = gmsh.model.addPhysicalGroup(2, trace_top, (basic_group_tag += 1), "trace_top")
+    trace_top_group =
+        gmsh.model.addPhysicalGroup(2, trace_top, (basic_group_tag += 1), "trace_top")
 
     # Generate mesh
     gmsh.option.setNumber("Mesh.MeshSizeMin", mesh_size_min)
@@ -414,14 +459,14 @@ function generate_mesh(config::GeneratorConfig)
         last.(
             filter(
                 x -> x[1] == 0,
-                gmsh.model.getBoundary([(2, z) for z in gap], false, true, true)
+                gmsh.model.getBoundary([(2, z) for z in gap], false, true, true),
             )
         )
     gap_curves =
         last.(
             filter(
                 x -> x[1] == 1,
-                gmsh.model.getBoundary([(2, z) for z in gap], false, false, false)
+                gmsh.model.getBoundary([(2, z) for z in gap], false, false, false),
             )
         )
 
