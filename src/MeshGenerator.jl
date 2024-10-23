@@ -6,7 +6,14 @@ using .GmshUtils
 using Gmsh: gmsh
 
 export GeneratorConfig,
-    Rectangle, ExcitationType, generate_mesh, basic_config, to_electrostatic!
+    Rectangle,
+    generate_mesh,
+    basic_config,
+    to_electrostatic!,
+    LumpedPort,
+    WavePort,
+    CoaxWavePort,
+    NoExcitation
 
 struct Rectangle
     x_min::Float64
@@ -155,7 +162,7 @@ function generate_mesh(config::GeneratorConfig)
     # Mesh parameters
     mesh_size_min = 1.0 * config.trace_width_μm * (2.0^-config.refinement_level)
     mesh_size_max =
-        2.0 * config.substrate_height_μm * (2.0^-(config.refinement_level * 0.25))
+        3.0 * config.substrate_height_μm * (2.0^-(config.refinement_level * 0.33))
 
     # Cut
     if !auto_detect

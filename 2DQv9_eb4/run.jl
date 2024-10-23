@@ -28,7 +28,7 @@ function driven_lumped(
         output_path,
         Rectangle(),
         200.0;
-        excitation_type = MeshGenerator.LumpedPort,
+        excitation_type = LumpedPort,
         lumped_ports = Rectangle[EXCITAION_LUMPED_PORT],
         jjs = JUNCTIONS,
         refinement_level = refine,
@@ -55,7 +55,11 @@ function driven_lumped(
     save_config(params, joinpath(output_path, "palace-config.json"))
 
     # Run Palace.
-    palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
+    palace_run(
+        joinpath(output_path, "palace-config.json"),
+        NUM_THREADS,
+        "--use-hwthread-cpus",
+    )
 end
 
 function electrostatic_RQ()
@@ -80,7 +84,11 @@ function electrostatic_RQ()
     save_config(params, joinpath(output_path, "palace-config.json"))
 
     # Run Palace.
-    palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
+    palace_run(
+        joinpath(output_path, "palace-config.json"),
+        NUM_THREADS,
+        "--use-hwthread-cpus",
+    )
 end
 
 """
@@ -153,7 +161,11 @@ function eigen_qubit(
     save_config(params, joinpath(output_path, "palace-config.json"))
 
     # Run Palace.
-    palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
+    palace_run(
+        joinpath(output_path, "palace-config.json"),
+        NUM_THREADS,
+        "--use-hwthread-cpus",
+    )
 end
 
 function eigen_resonator(
@@ -195,7 +207,11 @@ function eigen_resonator(
     save_config(params, joinpath(output_path, "palace-config.json"))
 
     # Run Palace.
-    palace_run(joinpath(output_path, "palace-config.json"), 64, "--use-hwthread-cpus")
+    palace_run(
+        joinpath(output_path, "palace-config.json"),
+        NUM_THREADS,
+        "--use-hwthread-cpus",
+    )
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
@@ -203,9 +219,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # eigen_qubit(21.70551, 3, 3, 3.0, true)
 
     # driven_lumped(3.5, 4.8, 0.0005)
-    # driven_lumped(6.9, 7.8, 0.001, 0, 16.78543, 21.70551)
-    # driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
-    # driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
+    driven_lumped(7.0, 7.8, 0.001, 0, 16.78543, 21.70551)
+    driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
+    driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
 
-    eigen_resonator(1, 1, 5.0)
+    # eigen_resonator(1, 1, 5.0)
 end

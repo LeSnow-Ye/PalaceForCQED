@@ -107,7 +107,7 @@ function convergence_plot(
     display(f)
 end
 
-output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test_#1")
+output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test_#0")
 convergence_plot(
     output_path;
     title = "Convergence Test for RQ (Qubit)",
