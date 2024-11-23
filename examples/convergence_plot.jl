@@ -7,14 +7,19 @@ function convergence_plot(
     path::AbstractString;
     eig_index::Int = 1,
     ylim::Tuple{Real,Real} = (0, 0),
+    xlim::Tuple{Real,Real} = (0, 0),
+    tol::Real = 0.003,
+    tol_bracket_xloc::Real = 0.4,
+    tol_bracket_flip::Bool = false,
     fitting::Bool = false,
     title::AbstractString = "",
     save_filename::AbstractString = "",
+    legend_position::Symbol = :rb,
 )
     dirs = readdir(path)
-    eig_r1o4 = 0.0
+    eig_r15o4 = 0.0
 
-    f = Figure()
+    f = Figure(fontsize = 18)
     ax = Axis(
         f[1, 1];
         title = title == "" ? "Convergence Test" : title,
@@ -25,6 +30,10 @@ function convergence_plot(
 
     if ylim != (0, 0)
         ylims!(ax, ylim)
+    end
+
+    if xlim != (0, 0)
+        xlims!(ax, xlim)
     end
 
     legend_icon = []
@@ -49,8 +58,8 @@ function convergence_plot(
                 push!(ref, r)
                 push!(time, js["ElapsedTime"]["Durations"]["Total"])
 
-                if order == 4 && r == 1.0
-                    eig_r1o4 = eig[end]
+                if order == 4 && r == 1.5
+                    eig_r15o4 = eig[end]
                 end
             catch
             end
@@ -84,47 +93,84 @@ function convergence_plot(
     push!(legend_icon, MarkerElement(color = :blue, marker = :circle))
     push!(legend_label, "Elapsed Time (Size)")
 
-    tol = 0.003
-    hl = hlines!(ax, [eig_r1o4]; color = :black, linestyle = (:dash), alpha = 0.5)
+    # tol
+    hl = hlines!(ax, [eig_r15o4]; color = :black, linestyle = (:dash), alpha = 0.5)
     push!(legend_icon, hl)
     push!(legend_label, "Freq. of r1.5o4")
 
-    hl_round = hlines!(
-        ax,
-        [eig_r1o4 * (1 + tol), eig_r1o4 * (1 - tol)];
-        color = :black,
-        linestyle = (:dashdot),
-    )
+    plus = eig_r15o4 * (1 + tol)
+    minus = eig_r15o4 * (1 - tol)
+    hl_round = hlines!(ax, [plus, minus]; color = (:red, 0.8), linestyle = (:dashdot))
     push!(legend_icon, hl_round)
     push!(legend_label, "r1.5o4 ± $(tol * 100)%")
 
-    axislegend(ax, legend_icon, legend_label, position = :rb)
+    bracket_args = (;
+        orientation = tol_bracket_flip ? :down : :up,
+        rotation = 0,
+        textoffset = 28,
+        color = (:red, 0.8),
+        textcolor = (:red, 0.8),
+    )
 
-    if save_filename != ""
-        save(joinpath(path, save_filename), f)
+    bracket!(
+        tol_bracket_xloc,
+        eig_r15o4,
+        tol_bracket_xloc,
+        plus;
+        text = "+$(tol * 100)%",
+        bracket_args...,
+    )
+    bracket!(
+        tol_bracket_xloc,
+        minus,
+        tol_bracket_xloc,
+        eig_r15o4;
+        text = "-$(tol * 100)%",
+        bracket_args...,
+    )
+
+
+    # Legend
+    axislegend(ax, legend_icon, legend_label, position = legend_position)
+    # Legend(f[1, 2], legend_icon, legend_label, position = :rb)
+
+    # Save
+    save_path = joinpath(@__DIR__, "imgs")
+    if !isdir(dirname(save_path))
+        mkpath(dirname(save_path))
     end
 
+    if save_filename == ""
+        # save(joinpath(path, save_filename), f)
+        print("Saving to $(save_path)")
+        save(jointpath(save_path, splitpath(path)[end] * ".svg"), f)
+    else
+        save(joinpath(save_path, save_filename), f)
+    end
+
+    # Display
     display(f)
 end
 
-output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test_#0")
+#WARNING: function is not generalized.
+
+output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "RQ", "convergence_test_#3")
 convergence_plot(
     output_path;
     title = "Convergence Test for RQ (Qubit)",
-    save_filename = "plot_qubit.svg",
+    save_filename = "convergence_test_qubit.svg",
+    xlim = (-0.1, 3.1),
+    tol_bracket_flip = true,
+    tol_bracket_xloc = 2.65,
     eig_index = 1,
-    fitting = false,
-) #, ylim=(3.78, 3.9), fitting=true)
-convergence_plot(
-    output_path;
-    title = "Convergence Test for RQ (resonator)",
-    save_filename = "plot_resonator.svg",
-    eig_index = 2,
     fitting = false,
 )
 
-# output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "resonator", "convergence_test_#0")
-# convergence_plot(output_path; title="Convergence Test for resonator", save_filename="plot.svg", eig_index=1, fitting=false)
-
-# output_path = joinpath("/data/lesnow/2DQv8_eb4_data", "resonator", "convergence_test_#1")
-# convergence_plot(output_path; title="Convergence Test for resonator (new)", save_filename="plot.svg", ylim=(7.5, 7.6), eig_index=1, fitting=false)
+convergence_plot(
+    output_path;
+    title = "Convergence Test for RQ (resonator)",
+    save_filename = "convergence_test_resonator.svg",
+    eig_index = 2,
+    fitting = false,
+    legend_position = :rt,
+)

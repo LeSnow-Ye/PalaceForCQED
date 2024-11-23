@@ -52,6 +52,10 @@ end
     gmsh_threads::Integer = 1
     verbose::Integer = 5
 
+    # Mesh parameters
+    mesh_size_min::Real = -1
+    mesh_size_max::Real = -1
+
     # Cutting
     gaps_area::Rectangle = Rectangle() # Set to Rectangle() to automatically detect gaps.
     area_expanded_from_gaps::Real = 0.0
@@ -80,7 +84,7 @@ function basic_config(
     area_expanded_from_gaps::Real;
     kwargs...,
 )
-    return GeneratorConfig(
+    config = GeneratorConfig(
         geo_file_path = geo_file_path,
         output_dir = output_dir,
         gaps_area = gaps_area,
@@ -88,6 +92,12 @@ function basic_config(
         excitation_type = NoExcitation;
         kwargs...,
     )
+
+    config.mesh_size_min = 1.5 * config.trace_width_μm * (2.0^-config.refinement_level)
+    config.mesh_size_max =
+        3.0 * config.substrate_height_μm * (2.0^-(config.refinement_level * 0.25))
+
+    return config
 end
 
 function check_config(config::GeneratorConfig)
@@ -97,6 +107,10 @@ function check_config(config::GeneratorConfig)
     @assert config.trace_width_μm > 0.0
     @assert config.substrate_height_μm > 0.0
     @assert config.metal_height_μm >= 0.0
+
+    @assert config.mesh_size_min > 0.0
+    @assert config.mesh_size_max > 0.0
+    @assert config.mesh_size_min <= config.mesh_size_max
 end
 
 function gmsh_add_rectangle(rect::Rectangle)
@@ -111,11 +125,7 @@ end
 
 function preprocess_geo_file!(config::GeneratorConfig)
     new_geo_file_path = joinpath(config.output_dir, "uniformized.geo")
-    uniformize(
-        config.geo_file_path,
-        new_geo_file_path;
-        min_length = config.trace_width_μm * (2.0^-config.refinement_level),
-    )
+    uniformize(config.geo_file_path, new_geo_file_path; min_length = config.mesh_size_min)
     config.geo_file_path = new_geo_file_path
 end
 
@@ -158,11 +168,6 @@ function generate_mesh(config::GeneratorConfig)
     sep_dz = config.air_domain_height_μm
     sep_dx = 0.5 * sep_dz
     sep_dy = 0.5 * sep_dz
-
-    # Mesh parameters
-    mesh_size_min = 1.0 * config.trace_width_μm * (2.0^-config.refinement_level)
-    mesh_size_max =
-        3.0 * config.substrate_height_μm * (2.0^-(config.refinement_level * 0.33))
 
     # Cut
     if !auto_detect
@@ -456,8 +461,8 @@ function generate_mesh(config::GeneratorConfig)
         gmsh.model.addPhysicalGroup(2, trace_top, (basic_group_tag += 1), "trace_top")
 
     # Generate mesh
-    gmsh.option.setNumber("Mesh.MeshSizeMin", mesh_size_min)
-    gmsh.option.setNumber("Mesh.MeshSizeMax", mesh_size_max)
+    gmsh.option.setNumber("Mesh.MeshSizeMin", config.mesh_size_min)
+    gmsh.option.setNumber("Mesh.MeshSizeMax", config.mesh_size_max)
     gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
     gmsh.option.setNumber("Mesh.MeshSizeFromCurvature", 0)
     gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
@@ -481,12 +486,12 @@ function generate_mesh(config::GeneratorConfig)
     gmsh.model.mesh.field.setNumbers(1, "PointsList", gap_points)
     gmsh.model.mesh.field.setNumbers(1, "CurvesList", gap_curves)
     gmsh.model.mesh.field.setNumbers(1, "SurfacesList", gap)
-    gmsh.model.mesh.field.setNumber(1, "Sampling", ceil(max(dx, dy) / mesh_size_min))
+    gmsh.model.mesh.field.setNumber(1, "Sampling", ceil(max(dx, dy) / config.mesh_size_min))
 
     gmsh.model.mesh.field.add("Threshold", 2)
     gmsh.model.mesh.field.setNumber(2, "InField", 1)
-    gmsh.model.mesh.field.setNumber(2, "SizeMin", mesh_size_min)
-    gmsh.model.mesh.field.setNumber(2, "SizeMax", mesh_size_max)
+    gmsh.model.mesh.field.setNumber(2, "SizeMin", config.mesh_size_min)
+    gmsh.model.mesh.field.setNumber(2, "SizeMax", config.mesh_size_max)
     gmsh.model.mesh.field.setNumber(2, "DistMin", config.trace_width_μm)
     gmsh.model.mesh.field.setNumber(2, "DistMax", 0.9 * sep_dz)
 

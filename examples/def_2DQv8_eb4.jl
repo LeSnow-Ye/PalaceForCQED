@@ -3,7 +3,7 @@ const CONFIG_DIR = joinpath(@__DIR__, "defaul_configs")
 const OUTPUT_DIR = "/data/lesnow/2DQv8_eb4_data"
 const GEO_PATH = joinpath(@__DIR__, "geo_files/2DQv8_eb4_edit.geo")
 const DEFAULT_ORDER = 4
-const DEFAULT_REFINEMENT = 1.0
+const DEFAULT_REFINEMENT = 1.5
 const NUM_THREADS = 64
 
 # Mesh

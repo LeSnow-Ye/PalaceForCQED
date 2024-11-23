@@ -27,7 +27,7 @@ function sweep_Lj(inds::Vector{Float64})
             "#$(test_id)",
             "eigen_L$(ind)nH_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))",
         )
-        eigen_qubit(ind, 2, 0, 3.0; output_path = output_path)
+        eigen_qubit(ind, 1, 0, 3.0; output_path = output_path)
     end
 end
 
