@@ -56,7 +56,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
 
     for order in range(3, 6)
-        for refine in range(1, 7 - order)
+        for refine in range(1, 9 - order)
             eigen_qubit_conv(refine / 2 - 0.5, order, test_id, 2, 3.0, true)
             # eigen_resonator_conv(refine / 2 - 0.5, order, test_id)
         end
