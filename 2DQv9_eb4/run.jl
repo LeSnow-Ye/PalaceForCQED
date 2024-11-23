@@ -92,16 +92,16 @@ function electrostatic_RQ()
 end
 
 """
-    function eigen_qubit(
-        jj_inductance::Real,
-        num_eigens::Int=2,
-        save_eigens::Int=2,
-        target_freq::Real=3.0;
-        with_resonator::Bool=false,
-        refine::Real=DEFAULT_REFINEMENT,
-        order::Int=DEFAULT_ORDER,
-        output_path::AbstractString=""
-    )
+	function eigen_qubit(
+		jj_inductance::Real,
+		num_eigens::Int=2,
+		save_eigens::Int=2,
+		target_freq::Real=3.0;
+		with_resonator::Bool=false,
+		refine::Real=DEFAULT_REFINEMENT,
+		order::Int=DEFAULT_ORDER,
+		output_path::AbstractString=""
+	)
 
 Compute the eigenmodes of the qubit system with a given Josephson junction inductance.
 
@@ -215,13 +215,11 @@ function eigen_resonator(
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    # eigen_qubit(16.710, 3, 3, 3.0)
-    # eigen_qubit(21.70551, 3, 3, 3.0, true)
+    # EXAMPLE USAGE
+    eigen_resonator(1, 1, 5.0)
+    eigen_qubit(21.70551, 2, 2, 3.0; with_resonator = true)
 
-    # driven_lumped(3.5, 4.8, 0.0005)
     driven_lumped(7.0, 7.8, 0.001, 0, 16.78543, 21.70551)
     driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
     driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
-
-    # eigen_resonator(1, 1, 5.0)
 end
