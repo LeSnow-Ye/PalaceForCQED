@@ -23,7 +23,7 @@
         "Attributes": [
           1002
         ], // Silicon
-        "LossTan": 2.1e-4,
+        "LossTan": 2.3e-6,
         "Permittivity": 11.49,
         "Permeability": 1.0
       }

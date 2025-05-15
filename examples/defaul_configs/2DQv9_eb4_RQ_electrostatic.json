@@ -23,7 +23,7 @@
         "Attributes": [
           1002
         ], // Silicon
-        "LossTan": 2.1e-4,
+        "LossTan": 2.3e-6,
         "Permittivity": 11.49,
         "Permeability": 1.0
       }
@@ -31,38 +31,64 @@
     "Postprocessing": {}
   },
   "Boundaries": {
-    "Terminal":
-    [
+    "Terminal": [
       {
         "Index": 1,
-        "Attributes": [1006]
+        "Attributes": [
+          1006
+        ]
       },
       {
         "Index": 2,
-        "Attributes": [1007]
+        "Attributes": [
+          1007
+        ]
       },
       {
         "Index": 3,
-        "Attributes": [1005]
+        "Attributes": [
+          1005
+        ]
       }
     ],
     "Ground": {
       "Attributes": [
-        1004
+        // 1005
       ]
     },
-    "Postprocessing": {}
+    "Postprocessing": {
+      "SurfaceFlux": [
+        {
+          "Index": 1,
+          "Attributes": [
+            1006
+          ],
+          "Type": "Electric"
+        },
+        {
+          "Index": 2,
+          "Attributes": [
+            1007
+          ],
+          "Type": "Electric"
+        },
+        {
+          "Index": 3,
+          "Attributes": [
+            1005
+          ],
+          "Type": "Electric"
+        }
+      ]
+    }
   },
-  "Solver":
-  {
+  "Solver": {
     "Order": 5,
     "Device": "CPU",
-    "Electrostatic":
-    {
+    "Electrostatic": {
       "Save": 3
     },
-    "Linear":
-    {
+    "Linear": {
       "Type": "BoomerAMG",
       "KSPType": "CG",
       "Tol": 1.0e-8,

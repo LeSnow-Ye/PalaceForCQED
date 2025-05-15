@@ -4,3 +4,5 @@ Manifest.toml
 
 data
 data_*
+
+__pycache__/

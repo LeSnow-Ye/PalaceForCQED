@@ -7,13 +7,13 @@ include("def_2DQv8_eb4.jl")
 function driven_lumped(
     MinFreq::Float64,
     MaxFreq::Float64,
-    FreqStep::Float64 = 0.001,
-    SaveStep::Integer = 0,
-    lj1::Real = -1,
-    lj2::Real = -1;
-    refine::Real = DEFAULT_REFINEMENT,
-    order::Int = DEFAULT_ORDER,
-    output_path::AbstractString = "",
+    FreqStep::Float64=0.001,
+    SaveStep::Integer=0,
+    lj1::Real=-1,
+    lj2::Real=-1;
+    refine::Real=DEFAULT_REFINEMENT,
+    order::Int=DEFAULT_ORDER,
+    output_path::AbstractString="",
 )
     default_path = joinpath(
         OUTPUT_DIR,
@@ -28,10 +28,10 @@ function driven_lumped(
         output_path,
         Rectangle(),
         200.0;
-        excitation_type = LumpedPort,
-        lumped_ports = Rectangle[EXCITAION_LUMPED_PORT],
-        jjs = JUNCTIONS,
-        refinement_level = refine,
+        excitation_type=LumpedPort,
+        lumped_ports=Rectangle[EXCITAION_LUMPED_PORT],
+        jjs=JUNCTIONS,
+        refinement_level=refine,
     )
     mesh_path = generate_mesh(mesh_config)
 
@@ -73,7 +73,7 @@ function electrostatic_RQ()
         output_path,
         RQ_RECT,
         300.0;
-        split_metal_physical_group = true,
+        split_metal_physical_group=true,
     )
     mesh_path = generate_mesh(mesh_config)
 
@@ -81,6 +81,54 @@ function electrostatic_RQ()
     params = load_config(joinpath(CONFIG_DIR, "2DQv9_eb4_RQ_electrostatic.json"))
     params["Model"]["Mesh"] = mesh_path
     params["Problem"]["Output"] = output_path
+    save_config(params, joinpath(output_path, "palace-config.json"))
+
+    # Run Palace.
+    palace_run(
+        joinpath(output_path, "palace-config.json"),
+        NUM_THREADS,
+        "--use-hwthread-cpus",
+    )
+end
+
+function driven_readout(
+    MinFreq::Float64,
+    MaxFreq::Float64,
+    FreqStep::Float64=0.001,
+    SaveStep::Integer=0,
+    refine::Real=DEFAULT_REFINEMENT,
+    order::Int=DEFAULT_ORDER,
+    output_path::AbstractString="",
+)
+    default_path = joinpath(
+        OUTPUT_DIR,
+        "readout_resonator/lumped_$(MinFreq)-$(MaxFreq)_Step$(FreqStep)_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))",
+    )
+    output_path = output_path == "" ? default_path : output_path
+    ensure_path(output_path)
+
+    # Generate mesh.
+    mesh_config = basic_config(
+        GEO_PATH,
+        output_path,
+        RQ_RECT,
+        200.0;
+        excitation_type=LumpedPort,
+        lumped_ports=Rectangle[READOUT_RESONATOR_PORT_RECT],
+        refinement_level=refine,
+    )
+    mesh_path = generate_mesh(mesh_config)
+
+    # Update parameters.
+    params = load_config(joinpath(CONFIG_DIR, "2DQv9_eb4_driven_readout_resonator.json"))
+    params["Model"]["Mesh"] = mesh_path
+    params["Problem"]["Output"] = output_path
+    params["Solver"]["Order"] = order
+    params["Solver"]["Driven"]["MinFreq"] = MinFreq
+    params["Solver"]["Driven"]["MaxFreq"] = MaxFreq
+    params["Solver"]["Driven"]["FreqStep"] = FreqStep
+    params["Solver"]["Driven"]["SaveStep"] = SaveStep
+
     save_config(params, joinpath(output_path, "palace-config.json"))
 
     # Run Palace.
@@ -120,13 +168,13 @@ while not affecting the accuracy of the eigenmodes too much.
 """
 function eigen_qubit(
     jj_inductance::Real,
-    num_eigens::Int = 2,
-    save_eigens::Int = 2,
-    target_freq::Real = 3.0;
-    with_resonator::Bool = false,
-    refine::Real = DEFAULT_REFINEMENT,
-    order::Int = DEFAULT_ORDER,
-    output_path::AbstractString = "",
+    num_eigens::Int=2,
+    save_eigens::Int=2,
+    target_freq::Real=3.0;
+    with_resonator::Bool=false,
+    refine::Real=DEFAULT_REFINEMENT,
+    order::Int=DEFAULT_ORDER,
+    output_path::AbstractString="",
 )
     @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
 
@@ -144,8 +192,8 @@ function eigen_qubit(
         output_path,
         with_resonator ? RQ_RECT : QUBIT_RECT,
         300.0;
-        jjs = [JUNCTIONS[2]],
-        refinement_level = refine,
+        jjs=[JUNCTIONS[2]],
+        refinement_level=refine,
     )
     mesh_path = generate_mesh(mesh_config)
 
@@ -169,12 +217,12 @@ function eigen_qubit(
 end
 
 function eigen_resonator(
-    num_eigens::Int = 1,
-    save_eigens::Int = 1,
-    target_freq::Real = 3.0;
-    refine::Real = DEFAULT_REFINEMENT,
-    order::Int = DEFAULT_ORDER,
-    output_path::AbstractString = "",
+    num_eigens::Int=1,
+    save_eigens::Int=1,
+    target_freq::Real=3.0;
+    refine::Real=DEFAULT_REFINEMENT,
+    order::Int=DEFAULT_ORDER,
+    output_path::AbstractString="",
 )
     @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
 
@@ -192,7 +240,53 @@ function eigen_resonator(
         output_path,
         RESONATOR_RECT,
         300.0;
-        refinement_level = refine,
+        refinement_level=refine,
+    )
+    mesh_path = generate_mesh(mesh_config)
+
+    # Update parameters.
+    params = load_config(joinpath(CONFIG_DIR, "2DQv9_eb4_resonator_eigen.json"))
+    params["Model"]["Mesh"] = mesh_path
+    params["Problem"]["Output"] = output_path
+    params["Solver"]["Order"] = order
+    params["Solver"]["Eigenmode"]["N"] = num_eigens
+    params["Solver"]["Eigenmode"]["Save"] = save_eigens
+    params["Solver"]["Eigenmode"]["Target"] = target_freq
+    save_config(params, joinpath(output_path, "palace-config.json"))
+
+    # Run Palace.
+    palace_run(
+        joinpath(output_path, "palace-config.json"),
+        NUM_THREADS,
+        "--use-hwthread-cpus",
+    )
+end
+
+function eigen_readout(
+    num_eigens::Int=1,
+    save_eigens::Int=1,
+    target_freq::Real=3.0;
+    refine::Real=DEFAULT_REFINEMENT,
+    order::Int=DEFAULT_ORDER,
+    output_path::AbstractString="",
+)
+    @assert num_eigens >= save_eigens "Number of eigenvalues to save must be less than or equal to the number of eigenvalues to compute."
+
+    default_path = joinpath(
+        OUTPUT_DIR,
+        "readout_resonator",
+        "eigen_$(Dates.format(now(), "yyyy-mm-ddTHHMMSS"))",
+    )
+    output_path = output_path == "" ? default_path : output_path
+    ensure_path(output_path)
+
+    # Generate mesh.
+    mesh_config = basic_config(
+        GEO_PATH,
+        output_path,
+        READOUT_RESONATOR_RECT,
+        300.0;
+        refinement_level=refine,
     )
     mesh_path = generate_mesh(mesh_config)
 
@@ -216,10 +310,22 @@ end
 
 if abspath(PROGRAM_FILE) == @__FILE__
     # EXAMPLE USAGE
-    eigen_resonator(1, 1, 5.0)
-    eigen_qubit(21.70551, 2, 2, 3.0; with_resonator = true)
+    # electrostatic_RQ()
 
-    driven_lumped(7.0, 7.8, 0.001, 0, 16.78543, 21.70551)
-    driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
-    driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
+    # driven_readout(7.293, 7.3, 0.00002, 0)
+    # eigen_readout()
+
+    eigen_resonator(1, 1, 5.0)
+    # eigen_qubit(21.70551, 2, 2, 3.0; with_resonator = true)
+    # eigen_qubit(16.78543, 2, 2, 3.0; with_resonator = true)
+
+    # driven_lumped(7.0, 7.8, 0.001, 0, 16.78543, 21.70551)
+    # driven_lumped(4.35, 4.45, 0.0001, 0, 16.78543, 21.70551)
+    # driven_lumped(3.83, 3.93, 0.0001, 0, 16.78543, 21.70551)
+
+    # driven_lumped(7.188, 7.198, 0.00002, 0, 16.78543, 21.70551)
+    # driven_lumped(7.281, 7.291, 0.00002, 0, 16.78543, 21.70551)
+    # driven_lumped(7.555, 7.565,  0.00002, 0, 16.78543, 21.70551)
+    # driven_lumped(7.65, 7.66, 0.00002, 0, 16.78543, 21.70551)
+
 end

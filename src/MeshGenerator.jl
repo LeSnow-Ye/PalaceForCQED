@@ -21,7 +21,7 @@ struct Rectangle
     y_min::Float64
     y_max::Float64
 
-    Rectangle(x_min = 0.0, x_max = 0.0, y_min = 0.0, y_max = 0.0) =
+    Rectangle(x_min=0.0, x_max=0.0, y_min=0.0, y_max=0.0) =
         new(x_min, x_max, y_min, y_max)
 end
 
@@ -42,37 +42,41 @@ end
 end
 
 @kwdef mutable struct GeneratorConfig
-    # General
+    ### General ###
     geo_file_path::AbstractString
     output_dir::AbstractString
     mesh_name::AbstractString = "mesh"
     refinement_level::Real = 1.5
     mesh_order::Integer = 1
     gui::Bool = false
-    gmsh_threads::Integer = 1
+    gmsh_threads::Integer = 8
     verbose::Integer = 5
 
-    # Mesh parameters
+    ### Mesh parameters ###
     mesh_size_min::Real = -1
     mesh_size_max::Real = -1
 
-    # Cutting
-    gaps_area::Rectangle = Rectangle() # Set to Rectangle() to automatically detect gaps.
+    ### Cutting ###
+
+    # Set to Rectangle() to automatically detect gaps.
+    gaps_area::Rectangle = Rectangle()
     area_expanded_from_gaps::Real = 0.0
 
-    # Ports
+    ### Ports ###
     excitation_type::ExcitationType
     lumped_ports::Vector{Rectangle} = []
-    jjs::Vector{Rectangle} = [] # They are also lumped ports. Renaming for convenience of readability.
 
-    # Geometry 
+    # They are also lumped ports. Renaming for convenience of readability.
+    jjs::Vector{Rectangle} = []
+
+    ### Geometry ###
     air_domain_height_μm::Real = 1500.0 # Above metal layer
     trace_width_μm::Real = 20.0
     substrate_height_μm::Real = 525.0
     metal_height_μm::Real = 0.0
     remove_metal_vol::Bool = false
 
-    # Others
+    ### Others ###
     split_metal_physical_group::Bool = false
 
 end
@@ -85,11 +89,11 @@ function basic_config(
     kwargs...,
 )
     config = GeneratorConfig(
-        geo_file_path = geo_file_path,
-        output_dir = output_dir,
-        gaps_area = gaps_area,
-        area_expanded_from_gaps = area_expanded_from_gaps,
-        excitation_type = NoExcitation;
+        geo_file_path=geo_file_path,
+        output_dir=output_dir,
+        gaps_area=gaps_area,
+        area_expanded_from_gaps=area_expanded_from_gaps,
+        excitation_type=NoExcitation;
         kwargs...,
     )
 
@@ -102,7 +106,7 @@ end
 
 function check_config(config::GeneratorConfig)
     @assert config.air_domain_height_μm > config.substrate_height_μm
-    @assert config.gmsh_threads == 1 # IDK why, but when `num_threads` is greater than 0, there is a segmentation fault.
+    # @assert config.gmsh_threads == 1 # IDK why, but when `num_threads` is greater than 0, there is a segmentation fault.
 
     @assert config.trace_width_μm > 0.0
     @assert config.substrate_height_μm > 0.0
@@ -125,7 +129,7 @@ end
 
 function preprocess_geo_file!(config::GeneratorConfig)
     new_geo_file_path = joinpath(config.output_dir, "uniformized.geo")
-    uniformize(config.geo_file_path, new_geo_file_path; min_length = config.mesh_size_min)
+    uniformize(config.geo_file_path, new_geo_file_path; min_length=config.mesh_size_min)
     config.geo_file_path = new_geo_file_path
 end
 
@@ -149,11 +153,11 @@ function generate_mesh(config::GeneratorConfig)
         for dim_tag in gaps_raw_dimtags
             xmin, ymin, zmin, xmax, ymax, zmax =
                 gmsh.model.occ.get_bounding_box(dim_tag[1], dim_tag[2])
-            x_min = round(min(x_min, xmin), digits = 3)
-            y_min = round(min(y_min, ymin), digits = 3)
-            x_max = round(max(x_max, xmax), digits = 3)
-            y_max = round(max(y_max, ymax), digits = 3)
-            @assert round(zmin, digits = 3) == round(zmax, digits = 3) == 0.0
+            x_min = round(min(x_min, xmin), digits=3)
+            y_min = round(min(y_min, ymin), digits=3)
+            x_max = round(max(x_max, xmax), digits=3)
+            y_max = round(max(y_max, ymax), digits=3)
+            @assert round(zmin, digits=3) == round(zmax, digits=3) == 0.0
         end
     else
         x_min, y_min, x_max, y_max = config.gaps_area.x_min,
