@@ -1,5 +1,7 @@
 # PalaceForCQED
 
+Python Port: [LeSnow-Ye/palace-sqc](https://github.com/LeSnow-Ye/palace-sqc)
+
 EM simulations workflow scripts for superconducting quantum circuits using [awslabs/palace](https://github.com/awslabs/palace).
 
 ## Example
